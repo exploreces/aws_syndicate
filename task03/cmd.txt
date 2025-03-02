@@ -1,0 +1,21 @@
+
+//get role arn
+aws iam get-role --role-name cmtr-78532faa-iam-peld-iam_role --query "Role.Arn" --output text
+arn:aws:iam::196241772369:role/cmtr-78532faa-iam-peld-iam_role
+
+// attach new policy of full access to role
+ aws iam attach-role-policy --role-name cmtr-78532faa-iam-peld-iam_role --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+//verify if acces got attached
+ aws iam list-attached-role-policies --role-name cmtr-78532faa-iam-peld-iam_role
+{
+    "AttachedPolicies": [
+        {
+            "PolicyName": "AmazonS3FullAccess",
+            "PolicyArn": "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        }
+    ]
+}
+
+//aws bucket policy addition
+aws s3api put-bucket-policy --bucket cmtr-78532faa-iam-peld-bucket-5036848 --policy file://s3-bucket-policy.json
