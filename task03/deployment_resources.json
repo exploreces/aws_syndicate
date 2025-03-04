@@ -24,5 +24,23 @@
     },
     "resource_type": "iam_policy",
     "tags": {}
+  },
+  "task3_api": {
+    "resource_type": "api_gateway",
+    "deploy_stage": "api",
+    "dependencies": [],
+    "resources": {
+      "paths": {
+        "/hello": {
+          "get": {
+            "function": "hello_world",
+            "response": {
+              "statusCode": 200
+            }
+          }
+        }
+      }
+    },
+    "tags": {}
   }
 }
