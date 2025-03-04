@@ -26,8 +26,9 @@
     "tags": {}
   },
   "task3_api": {
-    "deploy_stage": "api",
     "resource_type": "api_gateway",
+    "deploy_stage": "api",
+    "dependencies": [],
     "resources": {
       "/hello": {
         "GET": {
@@ -40,13 +41,9 @@
           "responses": [],
           "integration_responses": [],
           "default_error_pattern": true
-        },
-        "POST": {
-          "authorization_type": "NONE",
-          "api_key_required": false,
-          "lambda_name": "hello_world"
         }
       }
-    }
+    },
+    "tags": {}
   }
 }
