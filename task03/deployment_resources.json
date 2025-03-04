@@ -29,16 +29,7 @@
     "resource_type": "api_gateway",
     "deploy_stage": "api",
     "dependencies": [],
-    "resources": {
-      "/hello": {
-        "get": {
-          "function": "hello_world",
-          "response": {
-            "statusCode": 200
-          }
-        }
-      }
-    },
+    "resources": {},
     "tags": {}
   }
 }
