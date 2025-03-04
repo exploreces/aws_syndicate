@@ -6,6 +6,17 @@
       "lambda-basic-execution"
     ],
     "resource_type": "iam_role",
-    "tags": {}
+    "tags": {},
+
+    "policy": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "sns:Subscribe",
+          "sns:Publish"
+        ],
+        "Resource": "*"
+      }
+    ]
   }
 }

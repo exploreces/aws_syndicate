@@ -13,7 +13,7 @@
     {
       "resource_type": "sqs_trigger",
       "target_queue": "async_queue",
-      "batch_size": 10
+      "batch_size": 123
     }
   ],
   "env_variables": {},
