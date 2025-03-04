@@ -1,30 +1,19 @@
 const AWS = require("aws-sdk");
-const { v4: uuidv4 } = require("uuid");
-
-// Initialize DynamoDB Document Client
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
-const TABLE_NAME = "Events"; // DynamoDB table name
+const { v4: uuidv4 } = require("uuid"); // Ensure UUID generation
+
+const TABLE_NAME = "Events";
 
 exports.handler = async (event) => {
     try {
-        // Parse request body
+        console.log("Received event:", JSON.stringify(event));
+
         const requestBody = JSON.parse(event.body);
-        const { principalId, content } = requestBody;
-
-        // Validate input
-        if (!principalId || typeof content !== "object") {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: "Invalid request payload" }),
-            };
-        }
-
-        // Generate unique event ID and timestamp
         const newEvent = {
             id: uuidv4(),
-            principalId: principalId,
+            title: requestBody.title,
+            description: requestBody.description,
             createdAt: new Date().toISOString(),
-            body: content,
         };
 
         // Save event to DynamoDB
@@ -33,16 +22,17 @@ exports.handler = async (event) => {
             Item: newEvent,
         }).promise();
 
-        // Return successful response
         return {
             statusCode: 201,
-            body: JSON.stringify({ statusCode: 201, event: newEvent }),
+            body: JSON.stringify({ message: "Event created successfully", newEvent }),
         };
+
     } catch (error) {
         console.error("Error saving event:", error);
+
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: "Internal Server Error" }),
+            body: JSON.stringify({ message: "Internal Server Error", error: error.message }),
         };
     }
 };
