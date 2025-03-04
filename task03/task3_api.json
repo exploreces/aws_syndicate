@@ -8,11 +8,6 @@
           "authorization_type": "NONE",
           "api_key_required": false,
           "lambda_name": "hello_world"
-        },
-        "POST": {
-          "authorization_type": "NONE",
-          "api_key_required": false,
-          "lambda_name": "hello_world"
         }
       }
     }
