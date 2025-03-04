@@ -1,8 +1,8 @@
 const AWS = require("aws-sdk");
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
-const { v4: uuidv4 } = require("uuid"); // Ensure UUID generation
+const { v4: uuidv4 } = require("uuid");
 
-const TABLE_NAME = "Events";
+const TABLE_NAME = "cmtr-78532faa-Events-vrkf";
 
 exports.handler = async (event) => {
     try {
@@ -11,9 +11,9 @@ exports.handler = async (event) => {
         const requestBody = JSON.parse(event.body);
         const newEvent = {
             id: uuidv4(),
-            title: requestBody.title,
-            description: requestBody.description,
+            principalId: 10, // Assuming a fixed value, you can change this as needed
             createdAt: new Date().toISOString(),
+            body: requestBody,
         };
 
         // Save event to DynamoDB
