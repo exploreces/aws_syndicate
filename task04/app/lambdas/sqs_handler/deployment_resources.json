@@ -1,11 +1,17 @@
 {
   "sqs_handler-role": {
-    "predefined_policies": ["AWSLambdaSQSQueueExecutionRole"],
+    "predefined_policies": [],
     "principal_service": "lambda",
-    "custom_policies": ["lambda-basic-execution"],
-    "resource_type": "iam_role",
-    "tags": {},
-    "policy": [
+    "custom_policies": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource": "*"
+      },
       {
         "Effect": "Allow",
         "Action": [
@@ -15,6 +21,8 @@
         ],
         "Resource": "*"
       }
-    ]
+    ],
+    "resource_type": "iam_role",
+    "tags": {}
   }
 }
