@@ -2,16 +2,10 @@
   "sns_handler-role": {
     "predefined_policies": [],
     "principal_service": "lambda",
-    "custom_policies": [
-      {
-        "Effect": "Allow",
-        "Action": [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        "Resource": "*"
-      },
+    "custom_policies": ["lambda-basic-execution"],
+    "resource_type": "iam_role",
+    "tags": {},
+    "policy": [
       {
         "Effect": "Allow",
         "Action": [
@@ -20,8 +14,6 @@
         ],
         "Resource": "*"
       }
-    ],
-    "resource_type": "iam_role",
-    "tags": {}
+    ]
   }
 }
