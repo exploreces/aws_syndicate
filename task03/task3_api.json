@@ -6,15 +6,13 @@
       "/hello": {
         "GET": {
           "authorization_type": "NONE",
-          "integration_type": "lambda",
-          "lambda_name": "hello_world",
-          "lambda_region": "eu-central-1",
-          "enable_proxy": true,
-          "responses": [
-            {
-              "status_code": 200
-            }
-          ]
+          "api_key_required": false,
+          "lambda_name": "hello_world"
+        },
+        "POST": {
+          "authorization_type": "NONE",
+          "api_key_required": false,
+          "lambda_name": "hello_world"
         }
       }
     }
