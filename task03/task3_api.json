@@ -1,0 +1,22 @@
+{
+  "task3_api": {
+    "deploy_stage": "api",
+    "resource_type": "api_gateway",
+    "resources": {
+      "/hello": {
+        "GET": {
+          "authorization_type": "NONE",
+          "integration_type": "lambda",
+          "lambda_name": "hello_world",
+          "lambda_region": "eu-central-1",
+          "enable_proxy": true,
+          "responses": [
+            {
+              "status_code": 200
+            }
+          ]
+        }
+      }
+    }
+  }
+}
