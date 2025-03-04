@@ -1,0 +1,13 @@
+name: task3_api
+type: api-gateway
+provider: aws
+deploy:
+  region: us-east-1
+  stage: api
+spec:
+  paths:
+    /hello:
+      get:
+        function: hello_world
+        response:
+          statusCode: 200
