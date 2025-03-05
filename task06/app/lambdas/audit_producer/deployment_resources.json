@@ -1,0 +1,27 @@
+{
+  "audit_producer-role": {
+    "predefined_policies": [],
+    "principal_service": "lambda",
+    "custom_policies": [
+      "lambda-basic-execution",
+      {
+        "Action": [
+          "dynamodb:GetShardIterator",
+          "dynamodb:GetRecords",
+          "dynamodb:DescribeStream",
+          "dynamodb:ListStreams",
+          "dynamodb:Scan",
+          "dynamodb:Query",
+          "dynamodb:GetItem",
+          "dynamodb:PutItem"
+        ],
+        "Effect": "Allow",
+        "Resource": "*"
+      }
+
+    ],
+
+    "resource_type": "iam_role",
+    "tags": {}
+  }
+}
