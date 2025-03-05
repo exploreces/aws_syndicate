@@ -2,32 +2,24 @@
   "audit_producer-role": {
     "predefined_policies": [],
     "principal_service": "lambda",
-    "custom_policies": [
-      "lambda-basic-execution",
-      {
-        "policy_name": "dynamodb-stream-access",
-        "policy_content": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Action": [
-                "dynamodb:GetShardIterator",
-                "dynamodb:GetRecords",
-                "dynamodb:DescribeStream",
-                "dynamodb:ListStreams",
-                "dynamodb:Scan",
-                "dynamodb:Query",
-                "dynamodb:GetItem",
-                "dynamodb:PutItem"
-              ],
-              "Resource": "*"
-            }
-          ]
-        }
-      }
-    ],
+    "custom_policies": ["lambda-basic-execution"],
     "resource_type": "iam_role",
-    "tags": {}
+    "tags": {},
+    "policy": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:GetShardIterator",
+          "dynamodb:GetRecords",
+          "dynamodb:DescribeStream",
+          "dynamodb:ListStreams",
+          "dynamodb:Scan",
+          "dynamodb:Query",
+          "dynamodb:GetItem",
+          "dynamodb:PutItem"
+        ],
+        "Resource": "*"
+      }
+    ]
   }
 }
