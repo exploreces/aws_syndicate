@@ -11,7 +11,7 @@
   "dependencies": [],
   "event_sources": [],
   "env_variables": {
-    "target_table_name": "Events"
+    "demo_table_name": "Events"
   },
 
   "publish_version": true,
