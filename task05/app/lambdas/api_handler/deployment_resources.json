@@ -11,10 +11,13 @@
       "Statement": [
         {
           "Action": [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
             "dynamodb:GetItem",
             "dynamodb:Query",
-            "dynamodb:PutItem",
             "dynamodb:BatchWriteItem",
+            "dynamodb:PutItem",
             "dynamodb:DeleteItem"
           ],
           "Effect": "Allow",
