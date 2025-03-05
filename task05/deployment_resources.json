@@ -40,13 +40,13 @@
     "autoscaling": [],
     "tags": {}
   },
+
   "task5_api": {
     "resource_type": "api_gateway",
     "deploy_stage": "api",
     "dependencies": [],
     "resources": {
       "/events": {
-        "enable_cors": false,
         "POST": {
           "authorization_type": "NONE",
           "integration_type": "lambda",

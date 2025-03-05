@@ -4,7 +4,7 @@
   "func_name": "lambdas/api_handler/index.handler",
   "resource_type": "lambda",
   "iam_role_name": "api_handler-role",
-  "runtime": "nodejs20.x",
+  "runtime": "nodejs18.x",
   "memory": 128,
   "timeout": 100,
   "lambda_path": "lambdas\\api_handler",
@@ -17,7 +17,10 @@
       "function_response_types": ["ReportBatchItemFailures"]
     }
   ],
-  "env_variables": {},
+  "env_variables": {
+    "demo_table_name": "Events"
+  },
+
   "publish_version": true,
   "alias": "${lambdas_alias_name}",
   "url_config": {},
