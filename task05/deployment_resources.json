@@ -29,6 +29,18 @@
     "resource_type": "iam_policy",
     "tags": {}
   },
+
+  "Events": {
+    "resource_type": "dynamodb_table",
+    "hash_key_name": "id",
+    "hash_key_type": "S",
+    "read_capacity": 1,
+    "write_capacity": 1,
+    "global_indexes": [],
+    "autoscaling": [],
+    "tags": {}
+  },
+
   "task5_api": {
     "resource_type": "api_gateway",
     "deploy_stage": "api",
@@ -50,16 +62,7 @@
       }
     },
 
-  "Events": {
-    "resource_type": "dynamodb_table",
-    "hash_key_name": "id",
-    "hash_key_type": "S",
-    "read_capacity": 1,
-    "write_capacity": 1,
-    "global_indexes": [],
-    "autoscaling": [],
-    "tags": {}
-  },
+
 
     "tags": {}
   }
