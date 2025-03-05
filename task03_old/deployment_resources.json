@@ -31,7 +31,7 @@
     "dependencies": [],
     "resources": {
       "/hello": {
-        "GET": {
+        "POST": {
           "authorization_type": "NONE",
           "integration_type": "lambda",
           "lambda_name": "hello_world",

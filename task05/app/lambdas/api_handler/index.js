@@ -7,7 +7,8 @@ const { v4: uuidv4 } = require("uuid");
 const dynamoDBClient = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-central-1" });
 
 // Get the table name from environment variables
-const TABLE_NAME = process.env.DYNAMODB_TABLE || "Events";
+const TABLE_NAME = process.env.demo_table_name || "Events";
+
 if (!TABLE_NAME) {
     console.error("Error: DYNAMODB_TABLE environment variable is not set.");
 }
@@ -22,13 +23,13 @@ export const handler = async (event) => {
         console.log("Parsed Input Event:", inputEvent);
 
         // Validate input
-        if (!inputEvent?.principalId || inputEvent.content === undefined) {
-            console.error("Validation Error: Missing principalId or content.");
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: "Invalid input: principalId and content are required" }),
-            };
-        }
+       if (!inputEvent?.principalId || inputEvent?.content === undefined) {
+           return {
+               statusCode: 400,
+               body: JSON.stringify({ message: "Invalid input: principalId and content are required" }),
+           };
+       }
+
 
         // Generate unique ID and timestamp
         const eventId = uuidv4();
