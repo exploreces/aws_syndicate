@@ -2,9 +2,11 @@ const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
 const { v4: uuidv4 } = require("uuid");
 
 const dynamoDBClient = new DynamoDBClient({});
-const AUDIT_TABLE_NAME = process.env.demo_table_name || 'Audit';
+const AUDIT_TABLE_NAME = process.env.AUDIT_TABLE_NAME || 'Audit';
 
 exports.handler = async (event) => {
+  console.log('Processing event:', JSON.stringify(event));
+
   for (const record of event.Records) {
     try {
       console.log('Processing record:', JSON.stringify(record));
@@ -19,8 +21,11 @@ exports.handler = async (event) => {
       }
     } catch (error) {
       console.error('Error processing record:', error);
+      throw error; // Rethrow to ensure Lambda fails and retries
     }
   }
+
+  return { statusCode: 200 };
 };
 
 const handleInsertEvent = async (record) => {
@@ -30,17 +35,22 @@ const handleInsertEvent = async (record) => {
     return;
   }
 
+  const key = newImage.key?.S;
+  const value = parseInt(newImage.value?.N || '0');
+
   const auditRecord = {
     id: { S: uuidv4() },
-    itemKey: { S: newImage.key?.S || '' },
+    itemKey: { S: key || '' },
     modificationTime: { S: new Date().toISOString() },
     newValue: {
       M: {
-        key: { S: newImage.key?.S || '' },
-        value: { N: newImage.value?.N || '0' }
+        key: { S: key || '' },
+        value: { N: value.toString() }
       }
     }
   };
+
+  console.log('Saving INSERT audit record:', JSON.stringify(auditRecord));
 
   await dynamoDBClient.send(new PutItemCommand({
     TableName: AUDIT_TABLE_NAME,
@@ -56,13 +66,20 @@ const handleModifyEvent = async (record) => {
     return;
   }
 
+  const key = newImage.key?.S;
+  const newValue = parseInt(newImage.value?.N || '0');
+  const oldValue = parseInt(oldImage.value?.N || '0');
+
   const auditRecord = {
     id: { S: uuidv4() },
-    itemKey: { S: newImage.key?.S || '' },
+    itemKey: { S: key || '' },
     modificationTime: { S: new Date().toISOString() },
-    oldValue: { N: oldImage.value?.N || '0' },
-    newValue: { N: newImage.value?.N || '0' }
+    updatedAttribute: { S: "value" },
+    oldValue: { N: oldValue.toString() },
+    newValue: { N: newValue.toString() }
   };
+
+  console.log('Saving MODIFY audit record:', JSON.stringify(auditRecord));
 
   await dynamoDBClient.send(new PutItemCommand({
     TableName: AUDIT_TABLE_NAME,
