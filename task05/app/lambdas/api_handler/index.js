@@ -7,6 +7,8 @@ const TABLE_NAME = process.env.DYNAMODB_TABLE || "Events";
 
 export const handler = async (event) => {
     try {
+        console.log("Event received:", JSON.stringify(event, null, 2));
+
         // Parse event body
         const inputEvent = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
 
@@ -27,11 +29,12 @@ export const handler = async (event) => {
             id: { S: eventId },
             principalId: { N: String(Number(inputEvent.principalId)) },
             createdAt: { S: createdAt },
-            body: { S: JSON.stringify(inputEvent.content) }
+            body: { S: typeof inputEvent.content === "string" ? inputEvent.content : JSON.stringify(inputEvent.content) }
         };
 
         // Save to DynamoDB
-        await dynamoDBClient.send(new PutItemCommand({ TableName: Events, Item: eventItem }));
+        const response = await dynamoDBClient.send(new PutItemCommand({ TableName: TABLE_NAME, Item: eventItem }));
+        console.log("DynamoDB response:", response);
 
         // Prepare response
         return {
