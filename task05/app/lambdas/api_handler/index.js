@@ -3,17 +3,16 @@ import { PutItemCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from 'uuid';
 
 const dynamoDBClient = new DynamoDBClient({});
-const TABLE_NAME = process.env.EVENTS_TABLE_NAME || 'Events';
+const TABLE_NAME = process.env.EVENTS_TABLE_NAME;
 
 export const handler = async (event) => {
     try {
-        // Logging the entire input event for debugging
-        console.log('Received event:', JSON.stringify(event, null, 2));
+        // Parse the body if it's a string
+        const inputEvent = typeof event.body === 'string'
+            ? JSON.parse(event.body)
+            : event.body;
 
-        // Ensure event is parsed correctly
-        const inputEvent = typeof event === 'string' ? JSON.parse(event) : event;
-
-        // Input validation
+        // Validate input
         if (!inputEvent.principalId || inputEvent.content === undefined) {
             return {
                 statusCode: 400,
@@ -23,57 +22,37 @@ export const handler = async (event) => {
             };
         }
 
-        // Validate principalId is a number
-        const principalId = Number(inputEvent.principalId);
-        if (isNaN(principalId)) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({
-                    message: 'principalId must be a number'
-                })
-            };
-        }
-
-        // Generate UUID and current timestamp
+        // Prepare event item for DynamoDB
         const eventId = uuidv4();
         const createdAt = new Date().toISOString();
 
-        // Prepare event object for DynamoDB
         const eventItem = {
             id: { S: eventId },
-            principalId: { N: principalId.toString() },
+            principalId: { N: inputEvent.principalId.toString() },
             createdAt: { S: createdAt },
             body: { S: JSON.stringify(inputEvent.content) }
         };
 
-        // DynamoDB Put Command
-        const command = new PutItemCommand({
+        // Save to DynamoDB
+        await dynamoDBClient.send(new PutItemCommand({
             TableName: TABLE_NAME,
             Item: eventItem
-        });
+        }));
 
-        // Save to DynamoDB
-        await dynamoDBClient.send(command);
-
-        // Prepare response event object
-        const responseEvent = {
-            id: eventId,
-            principalId: principalId,
-            createdAt: createdAt,
-            body: inputEvent.content
-        };
-
-        // Return successful response with exactly 201 status code
+        // Prepare response
         return {
             statusCode: 201,
             body: JSON.stringify({
-                event: responseEvent
+                event: {
+                    id: eventId,
+                    principalId: Number(inputEvent.principalId),
+                    createdAt: createdAt,
+                    body: inputEvent.content
+                }
             })
         };
-
     } catch (error) {
-        console.error('Error processing event:', error);
-
+        console.error('Error:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({
