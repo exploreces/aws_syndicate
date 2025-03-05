@@ -31,7 +31,7 @@ export const handler = async (event) => {
         };
 
         // Save to DynamoDB
-        await dynamoDBClient.send(new PutItemCommand({ TableName: TABLE_NAME, Item: eventItem }));
+        await dynamoDBClient.send(new PutItemCommand({ TableName: Events, Item: eventItem }));
 
         // Prepare response
         return {
