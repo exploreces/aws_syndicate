@@ -12,6 +12,9 @@
             "dynamodb:PutItem",
             "dynamodb:Batch*",
             "dynamodb:DeleteItem",
+            "dynamodb:DescribeStream",
+            "dynamodb:GetRecords",
+            "dynamodb:ListStreams",
             "ssm:PutParameter",
             "ssm:GetParameter",
             "kms:Decrypt"
@@ -32,10 +35,13 @@
     "read_capacity": 1,
     "write_capacity": 1,
     "global_indexes": [],
+    "stream_enabled": true,
+    "stream_view_type": "NEW_AND_OLD_IMAGES",
     "autoscaling": [],
     "tags": {}
   },
-  "${target_table}": {
+
+  "Audit": {
     "resource_type": "dynamodb_table",
     "hash_key_name": "id",
     "hash_key_type": "S",

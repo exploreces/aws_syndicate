@@ -1,64 +1,63 @@
-const AWS = require('aws-sdk');
-const { v4: uuidv4 } = require('uuid');
+import { DynamoDBStreamEvent, DynamoDBRecord } from 'aws-lambda';
+import { 
+  DynamoDBClient, 
+  PutItemCommand 
+} from "@aws-sdk/client-dynamodb";
+import { v4 as uuidv4 } from 'uuid';
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-const AUDIT_TABLE = process.env.AUDIT_TABLE || "Audit";
+const dynamoDBClient = new DynamoDBClient({});
+const AUDIT_TABLE_NAME = process.env.AUDIT_TABLE_NAME || 'Audit';
 
-exports.handler = async (event) => {
-    console.log("Event received:", JSON.stringify(event, null, 2));
-
-    try {
-        for (const record of event.Records) {
-            if (record.eventName === "INSERT") {
-                await handleInsert(record);
-            } else if (record.eventName === "MODIFY") {
-                await handleModify(record);
-            }
-        }
-        return { statusCode: 200, body: "Audit processed" };
-    } catch (error) {
-        console.error("Error:", error);
-        return { statusCode: 500, body: "Error processing audit" };
+export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
+  for (const record of event.Records) {
+    switch (record.eventName) {
+      case 'INSERT':
+        await handleInsertEvent(record);
+        break;
+      case 'MODIFY':
+        await handleModifyEvent(record);
+        break;
     }
+  }
 };
 
-async function handleInsert(record) {
-    const newItem = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
-    const auditEntry = {
-        id: uuidv4(),
-        itemKey: newItem.key || "UNKNOWN_KEY",
-        modificationTime: new Date().toISOString(),
-        newValue: newItem
-    };
+const handleInsertEvent = async (record: DynamoDBRecord): Promise<void> => {
+  const newImage = record.dynamodb?.NewImage;
+  if (!newImage) return;
 
-    console.log("Insert Entry:", auditEntry);
-    await saveToAuditTable(auditEntry);
-}
-
-async function handleModify(record) {
-    const oldItem = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.OldImage);
-    const newItem = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
-
-    let changes = {};
-    for (let key in newItem) {
-        if (newItem[key] !== oldItem[key]) {
-            changes[key] = { old: oldItem[key], new: newItem[key] };
-        }
+  const auditRecord = {
+    id: { S: uuidv4() },
+    itemKey: { S: newImage.key.S || '' },
+    modificationTime: { S: new Date().toISOString() },
+    newValue: { 
+      M: {
+        key: { S: newImage.key.S || '' },
+        value: { N: newImage.value.N || '0' }
+      }
     }
+  };
 
-    if (Object.keys(changes).length > 0) {
-        const auditEntry = {
-            id: uuidv4(),
-            itemKey: newItem.key || "UNKNOWN_KEY",
-            modificationTime: new Date().toISOString(),
-            changes
-        };
+  await dynamoDBClient.send(new PutItemCommand({
+    TableName: AUDIT_TABLE_NAME,
+    Item: auditRecord
+  }));
+};
 
-        console.log("Modify Entry:", auditEntry);
-        await saveToAuditTable(auditEntry);
-    }
-}
+const handleModifyEvent = async (record: DynamoDBRecord): Promise<void> => {
+  const newImage = record.dynamodb?.NewImage;
+  const oldImage = record.dynamodb?.OldImage;
+  if (!newImage || !oldImage) return;
 
-async function saveToAuditTable(entry) {
-    await dynamodb.put({ TableName: AUDIT_TABLE, Item: entry }).promise();
-}
+  const auditRecord = {
+    id: { S: uuidv4() },
+    itemKey: { S: newImage.key.S || '' },
+    modificationTime: { S: new Date().toISOString() },
+    oldValue: { N: oldImage.value.N || '0' },
+    newValue: { N: newImage.value.N || '0' }
+  };
+
+  await dynamoDBClient.send(new PutItemCommand({
+    TableName: AUDIT_TABLE_NAME,
+    Item: auditRecord
+  }));
+};
