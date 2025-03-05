@@ -2,15 +2,28 @@
   "api_handler-role": {
     "predefined_policies": [],
     "principal_service": "lambda",
-    "custom_policies": [
-      "lambda-basic-execution",
-      "dynamodb:GetItem",
-      "dynamodb:Query",
-      "dynamodb:PutItem",
-      "dynamodb:Batch*",
-      "dynamodb:DeleteItem"
-    ],
+    "custom_policies": ["lambda-basic-execution", "dynamodb-access-policy"],
     "resource_type": "iam_role",
+    "tags": {}
+  },
+  "dynamodb-access-policy": {
+    "policy_content": {
+      "Statement": [
+        {
+          "Action": [
+            "dynamodb:GetItem",
+            "dynamodb:Query",
+            "dynamodb:PutItem",
+            "dynamodb:BatchWriteItem",
+            "dynamodb:DeleteItem"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+        }
+      ],
+      "Version": "2012-10-17"
+    },
+    "resource_type": "iam_policy",
     "tags": {}
   }
 }
