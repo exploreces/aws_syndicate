@@ -9,16 +9,9 @@
   "timeout": 100,
   "lambda_path": "lambdas\\api_handler",
   "dependencies": [],
-  "event_sources": [
-    {
-      "resource_type": "dynamodb_trigger",
-      "target_table": "Events",
-      "batch_size": 100,
-      "function_response_types": ["ReportBatchItemFailures"]
-    }
-  ],
+  "event_sources": [],
   "env_variables": {
-    "demo_table_name": "Events"
+    "target_table_name": "Events"
   },
 
   "publish_version": true,

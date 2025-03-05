@@ -26,8 +26,8 @@ export const handler = async (event) => {
 
         // Prepare item for DynamoDB
         const eventItem = {
-            id: { S: eventId },
-            principalId: { N: String(Number(inputEvent.principalId)) },
+            id: { S: String(eventId) },
+            principalId: { N: Number(inputEvent.principalId) },
             createdAt: { S: createdAt },
             body: { S: typeof inputEvent.content === "string" ? inputEvent.content : JSON.stringify(inputEvent.content) }
         };
