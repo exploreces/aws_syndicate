@@ -1,48 +1,71 @@
-const AWS = require("aws-sdk");
-const dynamoDB = new AWS.DynamoDB.DocumentClient();
-const { v4: uuidv4 } = require("uuid");
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { PutItemCommand } from "@aws-sdk/lib-dynamodb";
+import { v4 as uuidv4 } from 'uuid';
 
-const TABLE_NAME = "Events";
+const dynamoDBClient = new DynamoDBClient({});
+const TABLE_NAME = process.env.EVENTS_TABLE_NAME || 'Events';
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
     try {
-        console.log("Received event:", JSON.stringify(event));
-
-        if (!event.body) {
-            throw new Error("Missing event body");
+        // Input validation
+        if (!event.principalId || !event.content) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ 
+                    message: 'Invalid input: principalId and content are required' 
+                })
+            };
         }
 
-        const requestBody = JSON.parse(event.body);
-        if (!requestBody.title || !requestBody.description) {
-            throw new Error("Missing required fields: title and/or description");
+        // Validate principalId is a number
+        const principalId = Number(event.principalId);
+        if (isNaN(principalId)) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ 
+                    message: 'principalId must be a number' 
+                })
+            };
         }
 
-        const newEvent = {
-            id: uuidv4(),
-            principalId: 10, // Assuming a fixed value, you can change this as needed
-            createdAt: new Date().toISOString(),
-            body: requestBody,
+        // Generate UUID and current timestamp
+        const eventId = uuidv4();
+        const createdAt = new Date().toISOString();
+
+        // Prepare event object for DynamoDB
+        const eventItem = {
+            id: eventId,
+            principalId: principalId,
+            createdAt: createdAt,
+            body: event.content
         };
 
-        // Save event to DynamoDB
-        await dynamoDB.put({
+        // DynamoDB Put Command
+        const command = new PutItemCommand({
             TableName: TABLE_NAME,
-            Item: newEvent,
-        }).promise();
+            Item: eventItem
+        });
 
-        console.log("Event saved successfully:", JSON.stringify(newEvent));
+        // Save to DynamoDB
+        await dynamoDBClient.send(command);
 
+        // Return successful response
         return {
             statusCode: 201,
-            body: JSON.stringify({ message: "Event created successfully", newEvent }),
+            body: JSON.stringify({
+                event: eventItem
+            })
         };
 
     } catch (error) {
-        console.error("Error saving event:", error);
+        console.error('Error processing event:', error);
 
         return {
             statusCode: 500,
-            body: JSON.stringify({ message: "Internal Server Error", error: error.message }),
+            body: JSON.stringify({ 
+                message: 'Internal server error',
+                error: error.message 
+            })
         };
     }
 };
