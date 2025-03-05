@@ -1,6 +1,6 @@
 {
   "audit_producer-role": {
-    "predefined_policies": [],
+    "predefined_policies": ["AmazonDynamoDBFullAccess"],
     "principal_service": "lambda",
     "custom_policies": ["lambda-basic-execution"],
     "resource_type": "iam_role",
@@ -12,10 +12,13 @@
           "dynamodb:GetShardIterator",
           "dynamodb:GetRecords",
           "dynamodb:DescribeStream",
-          "dynamodb:ListStreams",
-          "dynamodb:Scan",
-          "dynamodb:Query",
-          "dynamodb:GetItem",
+          "dynamodb:ListStreams"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
           "dynamodb:PutItem"
         ],
         "Resource": "*"
