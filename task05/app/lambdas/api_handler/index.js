@@ -3,26 +3,22 @@ const { PutItemCommand } = require("@aws-sdk/lib-dynamodb");
 const { v4: uuidv4 } = require("uuid");
 
 
-// Initialize DynamoDB client with a region
 const dynamoDBClient = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-central-1" });
+const TABLE_NAME = "Events";
 
-// Get the table name from environment variables
-const TABLE_NAME = process.env.demo_table_name || "Events";
 
 if (!TABLE_NAME) {
     console.error("Error: DYNAMODB_TABLE environment variable is not set.");
 }
 
-// Lambda function handler
+
 export const handler = async (event) => {
     try {
         console.log("Event received:", JSON.stringify(event, null, 2));
 
-        // Parse event body
         const inputEvent = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
         console.log("Parsed Input Event:", inputEvent);
 
-        // Validate input
        if (!inputEvent?.principalId || inputEvent?.content === undefined) {
            return {
                statusCode: 400,
@@ -30,26 +26,21 @@ export const handler = async (event) => {
            };
        }
 
-
-        // Generate unique ID and timestamp
         const eventId = uuidv4();
         const createdAt = new Date().toISOString();
 
-        // Prepare item for DynamoDB
         const eventItem = {
             id: { S: eventId },
-            principalId: { N: String(inputEvent.principalId) }, // Ensure number is stored as a string
+            principalId: { N: String(inputEvent.principalId) },
             createdAt: { S: createdAt },
             body: { S: typeof inputEvent.content === "string" ? inputEvent.content : JSON.stringify(inputEvent.content) },
         };
 
         console.log("Prepared DynamoDB Item:", JSON.stringify(eventItem, null, 2));
 
-        // Save to DynamoDB
         const response = await dynamoDBClient.send(new PutItemCommand({ TableName: TABLE_NAME, Item: eventItem }));
         console.log("DynamoDB Response:", response);
 
-        // Return success response
         return {
             statusCode: 201,
             body: JSON.stringify({
@@ -69,3 +60,7 @@ export const handler = async (event) => {
         };
     }
 };
+
+
+
+

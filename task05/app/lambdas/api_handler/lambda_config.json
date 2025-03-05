@@ -16,9 +16,7 @@
       "batch_size": 2
     }
   ],
-  "env_variables": {
-    "demo_table_name": "Events"
-  },
+  "env_variables": {},
 
   "publish_version": true,
   "alias": "${lambdas_alias_name}",
