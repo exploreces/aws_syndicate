@@ -6,5 +6,8 @@
   "scripts": {},
   "author": "",
   "license": "ISC",
-  "dependencies": {}
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.474.0",
+    "uuid": "^9.0.1"
+  }
 }
