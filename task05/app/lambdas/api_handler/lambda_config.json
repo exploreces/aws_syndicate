@@ -8,9 +8,21 @@
   "memory": 128,
   "timeout": 100,
   "lambda_path": "lambdas\\api_handler",
-  "dependencies": [],
-  "event_sources": [],
-  "env_variables": {},
+  "dependencies": [
+    {
+      "resource_name": "${target_table}",
+      "resource_type": "dynamodb_table"
+    }
+  ],
+  "event_sources": [
+    {
+      "target_table": "${target_table}",
+      "resource_type": "dynamodb_trigger"
+    }
+  ],
+  "env_variables": {
+    "demo_table_name": "${target_table}"
+  },
   "publish_version": true,
   "alias": "${lambdas_alias_name}",
   "url_config": {},
