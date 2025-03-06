@@ -16,7 +16,6 @@ export const handler = async (event) => {
             console.error("Error parsing event body:", parseError);
             return {
                 statusCode: 400,
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: "Invalid JSON format in request body" })
             };
         }
@@ -25,7 +24,6 @@ export const handler = async (event) => {
             console.error("Validation failed: Missing required fields", inputEvent);
             return {
                 statusCode: 400,
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: "Invalid input: principalId and content are required" })
             };
         }
@@ -33,40 +31,43 @@ export const handler = async (event) => {
         const eventId = uuidv4();
         const createdAt = new Date().toISOString();
 
-        // Store 'body' as a DynamoDB Map (not a string)
         const eventItem = {
-            id: { S: eventId },
-            principalId: { N: inputEvent.principalId.toString() },
-            createdAt: { S: createdAt },
-            body: { M: inputEvent.content }  // ✅ Fix: Store as an object instead of string
+            id: eventId,
+            principalId: Number(inputEvent.principalId),
+            createdAt,
+            body: inputEvent.content
         };
 
         console.log("Saving to DynamoDB:", JSON.stringify(eventItem, null, 2));
 
-        await dynamoDBClient.send(new PutItemCommand({
+        const response = await dynamoDBClient.send(new PutCommand({
             TableName: TABLE_NAME,
-            Item: eventItem
+            Item: {
+                            id: eventId,
+                            principalId: Number(inputEvent.principalId),
+                            createdAt,
+                            body: JSON.stringify(inputEvent.content)
+                        }
         }));
+        console.log("Saved successfully");
 
-        console.log("DynamoDB save successful");
+        console.log("DynamoDB Response:", response);
 
         return {
             statusCode: 201,
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                event: {
-                    id: eventId,
-                    principalId: Number(inputEvent.principalId),
-                    createdAt,
-                    body: inputEvent.content
-                }
+               event: {
+                                   id: eventId,
+                                   principalId: Number(inputEvent.principalId),
+                                   createdAt,
+                                   body: inputEvent.content
+                               }
             })
         };
     } catch (error) {
         console.error("Error processing request:", error);
         return {
             statusCode: 500,
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: "Internal server error", error: error.message })
         };
     }
