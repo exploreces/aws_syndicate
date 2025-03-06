@@ -14,11 +14,7 @@
             "dynamodb:DeleteItem",
             "ssm:PutParameter",
             "ssm:GetParameter",
-            "kms:Decrypt",
-            "dynamodb:GetRecords",
-            "dynamodb:GetShardIterator",
-            "dynamodb:DescribeStream",
-            "dynamodb:ListStreams"
+            "kms:Decrypt"
           ],
           "Effect": "Allow",
           "Resource": "*"
@@ -29,8 +25,7 @@
     "resource_type": "iam_policy",
     "tags": {}
   },
-
-  "Events": {
+  "${target_table}": {
     "resource_type": "dynamodb_table",
     "hash_key_name": "id",
     "hash_key_type": "S",
@@ -40,19 +35,18 @@
     "autoscaling": [],
     "tags": {}
   },
-
-
   "task5_api": {
     "resource_type": "api_gateway",
     "deploy_stage": "api",
     "dependencies": [],
     "resources": {
       "/events": {
+        "enable_cors": false,
         "POST": {
           "authorization_type": "NONE",
+          "enable_proxy": true,
           "integration_type": "lambda",
           "lambda_name": "api_handler",
-          "enable_proxy": true,
           "api_key_required": false,
           "method_request_parameters": {},
           "integration_request_body_template": {},
@@ -62,39 +56,6 @@
         }
       }
     },
-
-  "api_handler-role": {
-    "predefined_policies": ["AmazonDynamoDBFullAccess"],
-    "principal_service": "lambda",
-    "custom_policies": ["lambda-basic-execution", "dynamodb-access-policy"],
-    "resource_type": "iam_role",
     "tags": {}
-  },
-  "dynamodb-access-policy": {
-    "policy_content": {
-      "Statement": [
-        {
-          "Action": [
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents",
-            "dynamodb:GetItem",
-            "dynamodb:Query",
-            "dynamodb:BatchWriteItem",
-            "dynamodb:PutItem",
-            "dynamodb:DeleteItem"
-          ],
-          "Effect": "Allow",
-          "Resource": "*"
-        }
-      ],
-      "Version": "2012-10-17"
-    },
-    "resource_type": "iam_policy",
-    "tags": {}
-},
-
-
-"tags": {}
   }
 }

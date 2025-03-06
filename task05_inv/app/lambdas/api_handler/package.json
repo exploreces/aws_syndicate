@@ -1,0 +1,14 @@
+{
+  "name": "api_handler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "type": "module",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.474.0",
+    "uuid": "^9.0.1"
+  }
+}

@@ -1,82 +1,64 @@
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { PutItemCommand } = require("@aws-sdk/lib-dynamodb");
-const { v4: uuidv4 } = require("uuid");
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { PutItemCommand } from "@aws-sdk/lib-dynamodb";
+import { v4 as uuidv4 } from 'uuid';
 
-const dynamoDBClient = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-central-1" });
-const TABLE_NAME = process.env.target_table || "Events";
+const dynamoDBClient = new DynamoDBClient();
+const TABLE_NAME = process.env.EVENTS_TABLE_NAME;
 
 export const handler = async (event) => {
     try {
-        console.log("Event received:", JSON.stringify(event, null, 2));
-
-        // Parse input event body
-        const inputEvent = typeof event.body === "string"
+        // Parse the body if it's a string
+        const inputEvent = typeof event.body === 'string'
             ? JSON.parse(event.body)
             : event.body;
 
-        console.log("Parsed Input Event:", inputEvent);
-
         // Validate input
-        if (!inputEvent?.principalId || inputEvent?.content === undefined) {
+        if (!inputEvent.principalId || inputEvent.content === undefined) {
             return {
                 statusCode: 400,
                 body: JSON.stringify({
-                    message: "Invalid input: principalId and content are required",
-                    receivedEvent: inputEvent
-                }),
+                    message: 'Invalid input: principalId and content are required'
+                })
             };
         }
 
+        // Prepare event item for DynamoDB
         const eventId = uuidv4();
         const createdAt = new Date().toISOString();
 
-        // Prepare DynamoDB item
         const eventItem = {
             id: { S: eventId },
-            principalId: { N: String(inputEvent.principalId) },
+            principalId: { N: inputEvent.principalId.toString() },
             createdAt: { S: createdAt },
-            body: { S: typeof inputEvent.content === "string"
-                ? inputEvent.content
-                : JSON.stringify(inputEvent.content)
-            },
-            event: { S: JSON.stringify({
-                id: eventId,
-                principalId: Number(inputEvent.principalId),
-                createdAt: createdAt,
-                body: inputEvent.content
-            })}
+            body: { S: JSON.stringify(inputEvent.content) }
         };
 
-        console.log("Prepared DynamoDB Item:", JSON.stringify(eventItem, null, 2));
+        // Save to DynamoDB
+        await dynamoDBClient.send(new PutItemCommand({
+            TableName: TABLE_NAME,
+            Item: eventItem
+        }));
 
-        // Send item to DynamoDB
-        const response = await dynamoDBClient.send(
-            new PutItemCommand({
-                TableName: TABLE_NAME,
-                Item: eventItem
-            })
-        );
-
-        console.log("DynamoDB Response:", response);
-
-        // Return response
+        // Prepare response
         return {
             statusCode: 201,
             body: JSON.stringify({
-                id: eventId,
-                principalId: Number(inputEvent.principalId),
-                createdAt: createdAt,
-                body: inputEvent.content
-            }),
+                event: {
+                    id: eventId,
+                    principalId: Number(inputEvent.principalId),
+                    createdAt: createdAt,
+                    body: inputEvent.content
+                }
+            })
         };
     } catch (error) {
-        console.error("Error:", error);
+        console.error('Error:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: "Internal server error!",
+                message: 'Internal server error',
                 error: error.message
-            }),
+            })
         };
     }
 };
