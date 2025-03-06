@@ -10,8 +10,12 @@
   "lambda_path": "lambdas\\api_handler",
   "dependencies": [
     {
-      "resource_name": "target_table",
+      "resource_name": "${target_table}",
       "resource_type": "dynamodb_table"
+    },
+    {
+      "resource_name": "task5_api",
+      "resource_type": "api_gateway"
     }
   ],
   "event_sources": [
@@ -26,7 +30,10 @@
   },
   "publish_version": true,
   "alias": "${lambdas_alias_name}",
-  "url_config": {},
+
+  "url_config": {
+    "auth_type": "NONE"
+  },
   "ephemeral_storage": 512,
   "tags": {}
 }

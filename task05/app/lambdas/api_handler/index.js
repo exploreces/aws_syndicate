@@ -7,12 +7,11 @@ const TABLE_NAME = process.env.target_table;
 
 export const handler = async (event) => {
     try {
-        // Parse the body if it's a string
+
         const inputEvent = typeof event.body === 'string'
             ? JSON.parse(event.body)
             : event.body;
 
-        // Validate input
         if (!inputEvent.principalId || inputEvent.content === undefined) {
             return {
                 statusCode: 400,

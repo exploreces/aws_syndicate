@@ -25,9 +25,8 @@
     "resource_type": "iam_policy",
     "tags": {}
   },
-  "target_table": {
+  "${target_table}": {
     "resource_type": "dynamodb_table",
-    "table_name": "Events",
     "hash_key_name": "id",
     "hash_key_type": "S",
     "read_capacity": 1,
@@ -46,9 +45,9 @@
         "enable_cors": false,
         "POST": {
           "authorization_type": "NONE",
-          "enable_proxy": true,
           "integration_type": "lambda",
           "lambda_name": "api_handler",
+          "enable_proxy": true,
           "api_key_required": false,
           "method_request_parameters": {},
           "integration_request_body_template": {},
