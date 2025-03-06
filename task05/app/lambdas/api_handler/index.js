@@ -6,7 +6,7 @@ const dynamoDBClient = new DynamoDBClient();
 const { PutItemCommand } = pkg;
 
 // Ensure TABLE_NAME is correctly set, or use the expected table name
-const TABLE_NAME = process.env.TABLE_NAME || "cmtr-78532faa-Events-zfd0";
+const TABLE_NAME = process.env.TABLE_NAME || "Events";
 
 export const handler = async (event) => {
     try {
