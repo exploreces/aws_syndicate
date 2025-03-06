@@ -50,7 +50,8 @@ export const handler = async (event) => {
         console.log("DynamoDB Response:", response);
 
         return {
-            "statusCode": SUCCESS_STATUS_CODE,
+            "statusCode": response.statusCode,
+            "headers": { "Content-Type": "application/json" },
             "event": eventItem
         };
 
