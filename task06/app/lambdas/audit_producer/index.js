@@ -1,63 +1,102 @@
-import { DynamoDBStreamEvent, DynamoDBRecord } from 'aws-lambda';
-import { 
-  DynamoDBClient, 
-  PutItemCommand 
-} from "@aws-sdk/client-dynamodb";
-import { v4 as uuidv4 } from 'uuid';
+import { createRequire } from "module";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { v4 as uuidv4 } from "uuid";
 
-const dynamoDBClient = new DynamoDBClient({});
-const AUDIT_TABLE_NAME = process.env.AUDIT_TABLE_NAME || 'Audit';
 
-export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
-  for (const record of event.Records) {
-    switch (record.eventName) {
-      case 'INSERT':
-        await handleInsertEvent(record);
-        break;
-      case 'MODIFY':
-        await handleModifyEvent(record);
-        break;
-    }
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
+
+exports.handler = async (event) => {
+  console.log('Received event:', JSON.stringify(event, null, 2));
+
+  const auditPromises = event.Records.map(record => processRecord(record));
+
+  try {
+    await Promise.all(auditPromises);
+    console.log('Successfully processed all records');
+    return { statusCode: 200, body: 'Success' };
+  } catch (error) {
+    console.error('Error processing records:', error);
+    throw error;
   }
 };
 
-const handleInsertEvent = async (record: DynamoDBRecord): Promise<void> => {
-  const newImage = record.dynamodb?.NewImage;
-  if (!newImage) return;
+/**
+ * Process individual DynamoDB Stream record
+ * @param {Object} record - DynamoDB Stream record
+ * @returns {Promise} - Promise from DynamoDB put operation
+ */
+async function processRecord(record) {
+  const eventName = record.eventName;
+  const dynamodbRecord = record.dynamodb;
 
-  const auditRecord = {
-    id: { S: uuidv4() },
-    itemKey: { S: newImage.key.S || '' },
-    modificationTime: { S: new Date().toISOString() },
-    newValue: { 
-      M: {
-        key: { S: newImage.key.S || '' },
-        value: { N: newImage.value.N || '0' }
-      }
+  const modificationTime = new Date().toISOString();
+
+  const itemKey = dynamodbRecord.Keys.key.S;
+
+  // Create audit item with required fields
+  const auditItem = {
+    id: uuidv4(),
+    itemKey: itemKey,
+    modificationTime: modificationTime
+  };
+
+  // Process based on event type
+  if (eventName === 'INSERT') {
+    // For INSERT, include the entire new item as newValue
+    const newImage = unmarshallImage(dynamodbRecord.NewImage);
+    auditItem.newValue = { key: newImage.key, value: newImage.value };
+  }
+  else if (eventName === 'MODIFY') {
+    // For MODIFY, extract old and new values
+    const oldImage = unmarshallImage(dynamodbRecord.OldImage);
+    const newImage = unmarshallImage(dynamodbRecord.NewImage);
+
+    auditItem.oldValue = oldImage.value;
+    auditItem.newValue = newImage.value;
+    auditItem.updatedAttribute = 'value'; // Assuming only 'value' changes
+  }
+  else if (eventName === 'REMOVE') {
+    // For REMOVE, include the deleted item as oldValue
+    const oldImage = unmarshallImage(dynamodbRecord.OldImage);
+    auditItem.oldValue = oldImage;
+  }
+
+  console.log('Saving audit item:', JSON.stringify(auditItem, null, 2));
+
+  // Save the audit item to the Audit table
+  const params = {
+    TableName: 'Audit',
+    Item: auditItem
+  };
+
+  return dynamoDB.put(params).promise();
+}
+
+/**
+ * Convert DynamoDB attribute values to JavaScript values
+ * @param {Object} image - DynamoDB image with attribute values
+ * @returns {Object} - Unmarshalled JavaScript object
+ */
+function unmarshallImage(image) {
+  if (!image) return null;
+
+  const result = {};
+
+  // Process each attribute in the image
+  for (const [key, value] of Object.entries(image)) {
+    if (value.S !== undefined) {
+      result[key] = value.S;
+    } else if (value.N !== undefined) {
+      result[key] = Number(value.N);
+    } else if (value.BOOL !== undefined) {
+      result[key] = value.BOOL;
+    } else if (value.M !== undefined) {
+      result[key] = unmarshallImage(value.M);
+    } else if (value.L !== undefined) {
+      result[key] = value.L.map(item => unmarshallImage(item));
     }
-  };
+  }
 
-  await dynamoDBClient.send(new PutItemCommand({
-    TableName: AUDIT_TABLE_NAME,
-    Item: auditRecord
-  }));
-};
-
-const handleModifyEvent = async (record: DynamoDBRecord): Promise<void> => {
-  const newImage = record.dynamodb?.NewImage;
-  const oldImage = record.dynamodb?.OldImage;
-  if (!newImage || !oldImage) return;
-
-  const auditRecord = {
-    id: { S: uuidv4() },
-    itemKey: { S: newImage.key.S || '' },
-    modificationTime: { S: new Date().toISOString() },
-    oldValue: { N: oldImage.value.N || '0' },
-    newValue: { N: newImage.value.N || '0' }
-  };
-
-  await dynamoDBClient.send(new PutItemCommand({
-    TableName: AUDIT_TABLE_NAME,
-    Item: auditRecord
-  }));
-};
+  return result;
+}
