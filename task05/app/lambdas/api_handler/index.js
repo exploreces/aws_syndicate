@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const dynamoDBClient = new DynamoDBClient();
 const TABLE_NAME = process.env.TABLE_NAME || "Events";
-const SUCCESS_STATUS_CODE = 201;
+
 
 export const handler = async (event) => {
     try {
@@ -46,11 +46,11 @@ export const handler = async (event) => {
             Item: eventItem,
         }));
         console.log("Saved successfully");
-        response.statusCode=201
+
         console.log("DynamoDB Response:", response);
 
         return {
-            "statusCode": response.statusCode,
+            "statusCode": "201",
             "headers": { "Content-Type": "application/json" },
             "event": eventItem
         };
