@@ -42,12 +42,7 @@ export const handler = async (event) => {
 
         const response = await dynamoDBClient.send(new PutCommand({
             TableName: TABLE_NAME,
-            Item: {
-                            id: eventId,
-                            principalId: Number(inputEvent.principalId),
-                            createdAt,
-                            body: JSON.stringify(inputEvent.content)
-                        }
+            Item: eventItem
         }));
         console.log("Saved successfully");
 
@@ -55,15 +50,9 @@ export const handler = async (event) => {
 
         return {
             statusCode: 201,
-            body: JSON.stringify({
-               event: {
-                                   id: eventId,
-                                   principalId: Number(inputEvent.principalId),
-                                   createdAt,
-                                   body: inputEvent.content
-                               }
-            })
+            event: eventItem
         };
+
     } catch (error) {
         console.error("Error processing request:", error);
         return {
