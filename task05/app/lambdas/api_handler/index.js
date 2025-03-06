@@ -3,15 +3,16 @@ import { PutItemCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from 'uuid';
 
 const dynamoDBClient = new DynamoDBClient();
-const TABLE_NAME = process.env.target_table;
+const TABLE_NAME = process.env.TABLE_NAME || "Events";
 
 export const handler = async (event) => {
     try {
-
+        // Parse the body if it's a string
         const inputEvent = typeof event.body === 'string'
             ? JSON.parse(event.body)
             : event.body;
 
+        // Validate input
         if (!inputEvent.principalId || inputEvent.content === undefined) {
             return {
                 statusCode: 400,
