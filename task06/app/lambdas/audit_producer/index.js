@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 // Initialize DynamoDB Client
 const client = new DynamoDBClient({});
 const dynamoDB = DynamoDBDocumentClient.from(client);
+const TABLE_NAME = process.env.TABLE_NAME || "Events";
 
 export const handler = async (event) => {
   console.log("Received event:", JSON.stringify(event, null, 2));
@@ -59,9 +60,10 @@ async function processRecord(record) {
   console.log("Saving audit item:", JSON.stringify(auditItem, null, 2));
 
   const params = new PutCommand({
-    TableName: "Audit",
+    TableName: TABLE_NAME,
     Item: auditItem
   });
+console.log("Attempting to write to table:", params.TableName);
 
   return await dynamoDB.send(params);
 }
