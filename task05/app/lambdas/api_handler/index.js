@@ -50,7 +50,7 @@ export const handler = async (event) => {
         console.log("DynamoDB Response:", response);
 
         return {
-            statusCode: 200;
+            statusCode: 200,
             "event": eventItem
         };
 
