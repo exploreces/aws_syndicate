@@ -17,7 +17,8 @@
   "event_sources": [
     {
       "target_table": "${target_table}",
-      "resource_type": "dynamodb_trigger"
+      "resource_type": "dynamodb_trigger",
+      "batch_size": 5
     }
   ],
   "env_variables": {
