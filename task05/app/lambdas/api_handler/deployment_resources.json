@@ -1,30 +1,13 @@
 {
   "api_handler-role": {
-    "predefined_policies": ["AmazonDynamoDBFullAccess"],
+    "predefined_policies": [],
     "principal_service": "lambda",
+    "custom_policies": [
+      "lambda-basic-execution"
+    ],
     "resource_type": "iam_role",
-    "tags": {}
-  },
-  "lambda-execution-policy": {
-    "policy_content": {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Action": [
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents",
-            "dynamodb:GetItem",
-            "dynamodb:Query",
-            "dynamodb:PutItem",
-            "dynamodb:DeleteItem"
-          ],
-          "Effect": "Allow",
-          "Resource": "*"
-        }
-      ]
-    },
-    "resource_type": "iam_policy",
-    "tags": {}
+    "allowed_accounts": [
+      "196241772369"
+    ]
   }
 }
