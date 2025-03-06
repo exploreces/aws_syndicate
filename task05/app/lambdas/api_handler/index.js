@@ -42,15 +42,15 @@ export const handler = async (event) => {
 
         const response = await dynamoDBClient.send(new PutCommand({
             TableName: TABLE_NAME,
-            Item: eventItem
+            Item: eventItem,
         }));
         console.log("Saved successfully");
 
         console.log("DynamoDB Response:", response);
 
         return {
-            statusCode: 201,
-            event: eventItem
+            "statusCode": 201,
+            "event": eventItem
         };
 
     } catch (error) {
