@@ -34,8 +34,8 @@
     "resource_type": "dynamodb_table",
     "hash_key_name": "id",
     "hash_key_type": "S",
-    "read_capacity": 5,
-    "write_capacity": 5,
+    "read_capacity": 1,
+    "write_capacity": 1,
     "global_indexes": [],
     "autoscaling": [],
     "tags": {}
@@ -63,6 +63,38 @@
       }
     },
 
+  "api_handler-role": {
+    "predefined_policies": ["AmazonDynamoDBFullAccess"],
+    "principal_service": "lambda",
+    "custom_policies": ["lambda-basic-execution", "dynamodb-access-policy"],
+    "resource_type": "iam_role",
     "tags": {}
+  },
+  "dynamodb-access-policy": {
+    "policy_content": {
+      "Statement": [
+        {
+          "Action": [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "dynamodb:GetItem",
+            "dynamodb:Query",
+            "dynamodb:BatchWriteItem",
+            "dynamodb:PutItem",
+            "dynamodb:DeleteItem"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+        }
+      ],
+      "Version": "2012-10-17"
+    },
+    "resource_type": "iam_policy",
+    "tags": {}
+},
+
+
+"tags": {}
   }
 }

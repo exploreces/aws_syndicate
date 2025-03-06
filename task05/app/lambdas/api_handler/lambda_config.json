@@ -8,21 +8,10 @@
   "memory": 128,
   "timeout": 100,
   "lambda_path": "lambdas\\api_handler",
-  "dependencies": [
-    {
-      "resource_name": "Events",
-      "resource_type": "dynamodb_table"
-    }
-  ],
-  "event_sources": [
-    {
-      "resource_type": "dynamodb_trigger",
-      "target_table": "Events",
-      "batch_size": 2
-    }
-  ],
+  "dependencies": [],
+  "event_sources": "",
   "env_variables": {
-    "demo_table_name": "Events"
+    "target_table": "Events"
   },
 
   "publish_version": true,
