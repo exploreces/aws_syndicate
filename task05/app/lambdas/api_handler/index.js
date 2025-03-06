@@ -49,10 +49,12 @@ export const handler = async (event) => {
 
         console.log("DynamoDB Response:", response);
 
-        return {
-            statusCode: 200,
-            "event": eventItem
-        };
+        const responseObject = {
+                    statusCode: 201,  // Using 201 Created as per your example
+                    event: eventItem
+                };
+
+        return responseObject;
 
     } catch (error) {
         console.error("Error processing request:", error);
