@@ -16,6 +16,7 @@ export const handler = async (event) => {
             console.error("Error parsing event body:", parseError);
             return {
                 statusCode: 400,
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: "Invalid JSON format in request body" })
             };
         }
@@ -24,6 +25,7 @@ export const handler = async (event) => {
             console.error("Validation failed: Missing required fields", inputEvent);
             return {
                 statusCode: 400,
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: "Invalid input: principalId and content are required" })
             };
         }
@@ -31,32 +33,40 @@ export const handler = async (event) => {
         const eventId = uuidv4();
         const createdAt = new Date().toISOString();
 
+        // Store 'body' as a DynamoDB Map (not a string)
         const eventItem = {
-            id: eventId,
-            principalId: Number(inputEvent.principalId),
-            createdAt,
-            body: JSON.stringify(inputEvent.content)
+            id: { S: eventId },
+            principalId: { N: inputEvent.principalId.toString() },
+            createdAt: { S: createdAt },
+            body: { M: inputEvent.content }  // ✅ Fix: Store as an object instead of string
         };
 
         console.log("Saving to DynamoDB:", JSON.stringify(eventItem, null, 2));
 
-        const response = await dynamoDBClient.send(new PutCommand({
+        await dynamoDBClient.send(new PutItemCommand({
             TableName: TABLE_NAME,
             Item: eventItem
         }));
 
-        console.log("DynamoDB Response:", response);
+        console.log("DynamoDB save successful");
 
         return {
             statusCode: 201,
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                event: eventItem
+                event: {
+                    id: eventId,
+                    principalId: Number(inputEvent.principalId),
+                    createdAt,
+                    body: inputEvent.content
+                }
             })
         };
     } catch (error) {
         console.error("Error processing request:", error);
         return {
             statusCode: 500,
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: "Internal server error", error: error.message })
         };
     }
