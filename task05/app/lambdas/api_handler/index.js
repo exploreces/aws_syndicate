@@ -57,6 +57,7 @@ export const handler = async (event) => {
                     })
                 };
 
+
         return responseObject;
 
     } catch (error) {
