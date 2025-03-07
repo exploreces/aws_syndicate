@@ -2,7 +2,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { PutItemCommand } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from 'uuid';
 
-const dynamoDBClient = new DynamoDBClient({});
+const dynamoDBClient = new DynamoDBClient();
 const TABLE_NAME = process.env.EVENTS_TABLE_NAME;
 
 export const handler = async (event) => {

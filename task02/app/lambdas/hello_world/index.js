@@ -7,6 +7,7 @@
 //    return response;
 //};
 
+
 exports.handler = async (event) => {
     // Determine request path and method
     const path = event.rawPath || event.path || "/";

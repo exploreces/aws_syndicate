@@ -5,9 +5,6 @@
     "custom_policies": [
       "lambda-basic-execution"
     ],
-    "resource_type": "iam_role",
-    "allowed_accounts": [
-      "196241772369"
-    ]
+    "resource_type": "iam_role"
   }
 }

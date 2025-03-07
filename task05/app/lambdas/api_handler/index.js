@@ -51,10 +51,8 @@ export const handler = async (event) => {
 
         const responseObject = {
                     statusCode: 201,
-                    body: JSON.stringify({
-                        statusCode: 201,
-                        event: eventItem
-                    })
+                    event: eventItem
+
                 };
 
 
