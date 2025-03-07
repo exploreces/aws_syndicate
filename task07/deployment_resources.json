@@ -47,7 +47,13 @@
     "custom_policies": [
       "lambda-basic-execution"
     ],
-    "allowed_accounts": [],
+    "data_sources": [
+      {
+        "name": "Events",
+        "type": "AMAZON_DYNAMODB"
+      }
+      ],
+    "allowed_accounts": ["196241772369"],
     "instance_profile": false,
     "permissions_boundary": "",
     "tags": {}

@@ -6,9 +6,9 @@ import { v4 as uuidv4 } from 'uuid';
  * @returns {*} the request
  */
 export function request(ctx) {
-    const id = uuidv4(); // Generate UUID
-    const createdAt = new Date().toISOString(); // ISO 8601 format
-    const payLoad = JSON.parse(ctx.arguments.payLoad); // Convert JSON string to an object
+    const id = uuidv4();
+    const createdAt = new Date().toISOString();
+    const payLoad = JSON.parse(ctx.arguments.payLoad);
 
     return {
         version: "2018-05-29",
@@ -16,7 +16,7 @@ export function request(ctx) {
         key: { id: { S: id } },
         attributeValues: {
             id: { S: id },
-            userId: { N: String(ctx.arguments.userId) }, // Store userId as a Number
+            userId: { N: String(ctx.arguments.userId) },
             createdAt: { S: createdAt },
             payLoad: {
                 M: {
