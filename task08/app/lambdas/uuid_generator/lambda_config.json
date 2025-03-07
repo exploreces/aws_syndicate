@@ -16,7 +16,7 @@
     }
   ],
   "env_variables": {
-    "S3_BUCKET_NAME": "${target_table}"
+    "S3_BUCKET_NAME": "${target_bucket}"
   },
   "publish_version": true,
   "alias": "${lambdas_alias_name}",
