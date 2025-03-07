@@ -1,48 +1,54 @@
 import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Sends a request to the attached data source
- * @param {import('@aws-appsync/utils').Context} ctx the context
- * @returns {*} the request
- */
 export function request(ctx) {
-    const id = uuidv4();
-    const createdAt = new Date().toISOString();
-    const payLoad = JSON.parse(ctx.arguments.payLoad);
+    try {
+        console.log("Incoming request arguments:", JSON.stringify(ctx.arguments));
 
-    return {
-        version: "2018-05-29",
-        operation: "PutItem",
-        key: { id: { S: id } },
-        attributeValues: {
-            id: { S: id },
-            userId: { N: String(ctx.arguments.userId) },
-            createdAt: { S: createdAt },
-            payLoad: {
-                M: {
-                    meta: {
-                        M: {
-                            key1: { N: String(payLoad.meta.key1) },
-                            key2: { S: payLoad.meta.key2 }
-                        }
-                    }
-                }
+        const { userId, payLoad } = ctx.arguments;
+        const timestamp = new Date().toISOString();
+        const eventId = uuidv4();
+
+        console.log("Generated eventId:", eventId);
+        console.log("Generated timestamp:", timestamp);
+
+        const requestPayload = {
+            operation: 'PutItem',
+            key: { id: { S: eventId } },
+            attributeValues: {
+                userId: { N: userId.toString() },
+                createdAt: { S: timestamp },
+                payLoad: { S: JSON.stringify(payLoad) }
             }
-        }
-    };
+        };
+
+        console.log("DynamoDB request payload:", JSON.stringify(requestPayload, null, 2));
+
+        return requestPayload;
+    } catch (error) {
+        console.error("Error in request resolver:", error);
+        throw new Error("Failed to process request");
+    }
 }
 
-/**
- * Returns the resolver result
- * @param {import('@aws-appsync/utils').Context} ctx the context
- * @returns {*} the result
- */
 export function response(ctx) {
     if (ctx.error) {
-        throw new Error(`Data source error: ${ctx.error.message}`);
+        console.error("AppSync resolver error:", JSON.stringify(ctx.error, null, 2));
+        throw new Error("Internal Server Error");
     }
-    return {
-        id: ctx.result.id.S,
-        createdAt: ctx.result.createdAt.S
-    };
+
+    console.log("DynamoDB response:", JSON.stringify(ctx.result, null, 2));
+
+    try {
+        const responsePayload = {
+            id: ctx.result.id.S,
+            createdAt: ctx.result.createdAt.S
+        };
+
+        console.log("Formatted response:", JSON.stringify(responsePayload));
+
+        return responsePayload;
+    } catch (parseError) {
+        console.error("Error parsing response data:", parseError);
+        throw new Error("Response processing failed");
+    }
 }

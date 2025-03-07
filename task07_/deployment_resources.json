@@ -10,14 +10,14 @@
             "dynamodb:GetItem",
             "dynamodb:Query",
             "dynamodb:PutItem",
+            "dynamodb:Batch*",
+            "dynamodb:DeleteItem",
+            "ssm:PutParameter",
             "dynamodb:GetItem",
             "dynamodb:Query",
             "dynamodb:PutItem",
             "dynamodb:Batch*",
             "dynamodb:DeleteItem",
-            "dynamodb:Batch*",
-            "dynamodb:DeleteItem",
-            "ssm:PutParameter",
             "ssm:GetParameter",
             "kms:Decrypt"
           ],
@@ -40,7 +40,6 @@
     "autoscaling": [],
     "tags": {}
   },
-
   "appsync_role": {
     "resource_type": "iam_role",
     "principal_service": "appsync",
@@ -48,6 +47,12 @@
     "custom_policies": [
       "lambda-basic-execution"
     ],
+    "data_sources": [
+      {
+        "name": "Events",
+        "type": "AMAZON_DYNAMODB"
+      }
+      ],
     "allowed_accounts": ["196241772369"],
     "instance_profile": false,
     "permissions_boundary": "",
