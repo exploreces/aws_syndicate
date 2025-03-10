@@ -8,14 +8,21 @@ const TABLE_NAME = process.env.TABLE_NAME || "Weather";
 
 exports.handler = async (event) => {
     console.log("Received event:", JSON.stringify(event, null, 2));
+    console.log("Using DynamoDB Table:", TABLE_NAME);
 
     const path = event?.rawPath || "/";
     const method = event?.requestContext?.http?.method || "GET";
 
+    console.log("Request Path:", path);
+    console.log("HTTP Method:", method);
+
     if (method === "GET" && path === "/weather") {
         try {
             const url = "https://api.open-meteo.com/v1/forecast?latitude=50.4375&longitude=30.5&hourly=temperature_2m&timezone=auto";
+            console.log("Fetching weather data from:", url);
+
             const response = await axios.get(url);
+            console.log("Weather API Response:", JSON.stringify(response.data, null, 2));
 
             const forecastData = response.data;
             const weatherEntry = {
@@ -33,13 +40,14 @@ exports.handler = async (event) => {
                 }
             };
 
-            console.log("Weather Data:", JSON.stringify(weatherEntry, null, 2));
+            console.log("Prepared Weather Data:", JSON.stringify(weatherEntry, null, 2));
 
-            // Store in DynamoDB
+            console.log("Storing data in DynamoDB...");
             await dynamoDB.put({
                 TableName: TABLE_NAME,
                 Item: weatherEntry
             }).promise();
+            console.log("Data successfully stored in DynamoDB.");
 
             return {
                 statusCode: 200,
@@ -61,6 +69,7 @@ exports.handler = async (event) => {
             };
         }
     } else {
+        console.warn("Bad request - unsupported path or method:", { path, method });
         return {
             statusCode: 400,
             body: JSON.stringify({
