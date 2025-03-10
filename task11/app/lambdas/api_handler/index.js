@@ -1,64 +1,71 @@
-/**
- * Signup Handler (Fixed)
- */
+import AWS from 'aws-sdk';
+
+const cognito = new AWS.CognitoIdentityServiceProvider();
+const USER_POOL_ID = process.env.USER_POOL_ID;
+const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID;
+
 export const signup = async (event) => {
   try {
     console.log("Signup request received");
-    const { firstName, lastName, email, password } = JSON.parse(event.body);
+
+    let requestBody;
+    try {
+      requestBody = JSON.parse(event.body);
+    } catch (parseError) {
+      console.warn("Invalid JSON format in request");
+      return { statusCode: 400, body: JSON.stringify({ error: "Invalid request format." }) };
+    }
+
+    const { firstName, lastName, email, password } = requestBody;
 
     if (!firstName || !lastName || !email || !password) {
       console.warn("Missing fields in signup request");
       return { statusCode: 400, body: JSON.stringify({ error: "All fields are required." }) };
     }
 
-    if (!/^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+    const emailRegex = /^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
       console.warn("Invalid email format");
       return { statusCode: 400, body: JSON.stringify({ error: "Invalid email format." }) };
     }
 
-    if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[$%^*-_])[A-Za-z\d$%^*-_]{12,}$/.test(password)) {
+    const passwordPolicyRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!passwordPolicyRegex.test(password)) {
       console.warn("Invalid password format");
-      return { statusCode: 400, body: JSON.stringify({ error: "Invalid password format." }) };
+      return { statusCode: 400, body: JSON.stringify({ error: "Invalid password format. Password must be at least 8 characters and include uppercase, lowercase, number, and a special character." }) };
     }
 
-    // Try creating the user
     await cognito.adminCreateUser({
       UserPoolId: USER_POOL_ID,
       Username: email,
       UserAttributes: [
         { Name: "given_name", Value: firstName },
         { Name: "family_name", Value: lastName },
-        { Name: "email", Value: email },
+        { Name: "email", Value: email }
       ],
-      TemporaryPassword: password,
       MessageAction: "SUPPRESS",
     }).promise();
 
-    // Set permanent password
     await cognito.adminSetUserPassword({
       UserPoolId: USER_POOL_ID,
       Username: email,
       Password: password,
-      Permanent: true, // Makes the password permanent
+      Permanent: true,
     }).promise();
 
-    console.log("User created successfully:", email);
-    return { statusCode: 200, body: JSON.stringify({ message: "User created successfully." }) };
+    await cognito.adminConfirmSignUp({
+      UserPoolId: USER_POOL_ID,
+      Username: email,
+    }).promise();
 
+    console.log("User signup successful:", email);
+    return { statusCode: 201, body: JSON.stringify({ message: "User created successfully" }) };
   } catch (error) {
     console.error("Signup error:", error);
-
-    if (error.code === "UsernameExistsException") {
-      return { statusCode: 409, body: JSON.stringify({ error: "User already exists." }) };
-    }
-
-    return { statusCode: 500, body: JSON.stringify({ error: "Signup failed." }) };
+    return { statusCode: 500, body: JSON.stringify({ error: "Signup failed due to an unexpected error." }) };
   }
 };
 
-/**
- * Signin Handler (Fixed)
- */
 export const signin = async (event) => {
   try {
     console.log("Signin request received");
@@ -75,8 +82,13 @@ export const signin = async (event) => {
     };
 
     const data = await cognito.adminInitiateAuth(params).promise();
-    console.log("Signin successful for:", email);
 
+    if (!data || !data.AuthenticationResult) {
+      console.warn("Authentication failed for user:", email);
+      return { statusCode: 400, body: JSON.stringify({ error: "Authentication failed." }) };
+    }
+
+    console.log("Signin successful for:", email);
     return {
       statusCode: 200,
       body: JSON.stringify({ accessToken: data.AuthenticationResult.AccessToken })
