@@ -1,34 +1,5 @@
-import { v4 as uuidv4 } from "uuid";
-import AWS from "aws-sdk";
-
-const { CognitoIdentityServiceProvider, DynamoDB } = AWS;
-const cognito = new CognitoIdentityServiceProvider({ region: process.env.REGION });
-const dynamoDb = new DynamoDB.DocumentClient();
-
-const TABLES_TABLE = process.env.TABLES_TABLE;
-const RESERVATIONS_TABLE = process.env.RESERVATIONS_TABLE;
-const USER_POOL_ID = process.env.cup_id;
-const COGNITO_CLIENT_ID = process.env.cup_client_id;
-
 /**
- * Helper function to validate token
- */
-const validateToken = async (event) => {
-  try {
-    const token = event.headers?.Authorization?.split(" ")[1];
-    if (!token) throw new Error("Missing token");
-
-    const response = await cognito.getUser({ AccessToken: token }).promise();
-    console.log("Token validated for user:", response.Username);
-    return response;
-  } catch (error) {
-    console.error("Token validation failed:", error);
-    throw new Error("Unauthorized");
-  }
-};
-
-/**
- * Signup Handler
+ * Signup Handler (Fixed)
  */
 export const signup = async (event) => {
   try {
@@ -50,16 +21,25 @@ export const signup = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: "Invalid password format." }) };
     }
 
+    // Try creating the user
     await cognito.adminCreateUser({
       UserPoolId: USER_POOL_ID,
       Username: email,
       UserAttributes: [
         { Name: "given_name", Value: firstName },
         { Name: "family_name", Value: lastName },
-        { Name: "email", Value: email }
+        { Name: "email", Value: email },
       ],
       TemporaryPassword: password,
       MessageAction: "SUPPRESS",
+    }).promise();
+
+    // Set permanent password
+    await cognito.adminSetUserPassword({
+      UserPoolId: USER_POOL_ID,
+      Username: email,
+      Password: password,
+      Permanent: true, // Makes the password permanent
     }).promise();
 
     console.log("User created successfully:", email);
@@ -67,12 +47,17 @@ export const signup = async (event) => {
 
   } catch (error) {
     console.error("Signup error:", error);
+
+    if (error.code === "UsernameExistsException") {
+      return { statusCode: 409, body: JSON.stringify({ error: "User already exists." }) };
+    }
+
     return { statusCode: 500, body: JSON.stringify({ error: "Signup failed." }) };
   }
 };
 
 /**
- * Signin Handler
+ * Signin Handler (Fixed)
  */
 export const signin = async (event) => {
   try {
@@ -98,67 +83,11 @@ export const signin = async (event) => {
     };
   } catch (error) {
     console.error("Signin error:", error);
+
+    if (error.code === "UserNotFoundException") {
+      return { statusCode: 400, body: JSON.stringify({ error: "User does not exist." }) };
+    }
+
     return { statusCode: 400, body: JSON.stringify({ error: "Authentication failed" }) };
-  }
-};
-
-/**
- * Get Tables Handler
- */
-export const getTables = async (event) => {
-  try {
-    await validateToken(event);
-    const data = await dynamoDb.scan({ TableName: TABLES_TABLE }).promise();
-    return { statusCode: 200, body: JSON.stringify({ tables: data.Items }) };
-  } catch (error) {
-    console.error("GetTables error:", error);
-    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized or failed to fetch tables." }) };
-  }
-};
-
-/**
- * Get Table by ID
- */
-export const getTableById = async (event) => {
-  try {
-    await validateToken(event);
-    const { tableId } = event.pathParameters;
-    const data = await dynamoDb.get({ TableName: TABLES_TABLE, Key: { id: tableId } }).promise();
-    if (!data.Item) return { statusCode: 404, body: JSON.stringify({ error: "Table not found." }) };
-    return { statusCode: 200, body: JSON.stringify(data.Item) };
-  } catch (error) {
-    console.error("GetTableById error:", error);
-    return { statusCode: 400, body: JSON.stringify({ error: "Failed to fetch table." }) };
-  }
-};
-
-/**
- * Add Table Handler
- */
-export const addTable = async (event) => {
-  try {
-    await validateToken(event);
-    const table = JSON.parse(event.body);
-    await dynamoDb.put({ TableName: TABLES_TABLE, Item: table }).promise();
-    return { statusCode: 200, body: JSON.stringify({ id: table.id }) };
-  } catch (error) {
-    console.error("AddTable error:", error);
-    return { statusCode: 400, body: JSON.stringify({ error: "Failed to add table." }) };
-  }
-};
-
-/**
- * Add Reservation Handler
- */
-export const addReservation = async (event) => {
-  try {
-    await validateToken(event);
-    const reservation = JSON.parse(event.body);
-    reservation.reservationId = uuidv4();
-    await dynamoDb.put({ TableName: RESERVATIONS_TABLE, Item: reservation }).promise();
-    return { statusCode: 200, body: JSON.stringify({ reservationId: reservation.reservationId }) };
-  } catch (error) {
-    console.error("AddReservation error:", error);
-    return { statusCode: 400, body: JSON.stringify({ error: "Failed to add reservation." }) };
   }
 };
