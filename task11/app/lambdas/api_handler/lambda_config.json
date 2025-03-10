@@ -8,14 +8,42 @@
   "memory": 128,
   "timeout": 100,
   "lambda_path": "lambdas\\api_handler",
-  "dependencies": [],
-  "event_sources": [],
+  "dependencies": [
+    {
+      "resource_name": "${booking_userpool}",
+      "resource_type": "cognito_idp"
+    }
+  ],
+  "event_sources": [
+    {
+      "resource_name": "${target_table}",
+      "resource_type": "dynamodb_table"
+    },
+
+    {
+      "resource_name": "${reservations_table}",
+      "resource_type": "dynamodb_table"
+    }
+  ],
+
   "env_variables": {
-    "TABLES_TABLE":"{tables_table}",
-    "RESERVATIONS_TABLE": "{reservations_table}",
-    "cup_id": "{booking_userpool}",
-    "cup_client_id":"{tableId}"
+
+    "cup_id": {
+      "resource_name": "${booking_userpool}",
+      "resource_type": "cognito_idp",
+      "parameter": "id"
+    },
+
+    "cup_client_id": {
+      "resource_name": "${booking_userpool}",
+      "resource_type": "cognito_idp",
+      "parameter": "client_id"
+    },
+
+    "TABLES_TABLE": "${tables_table}",
+    "RESERVATIONS_TABLE": "${reservations_table}"
   },
+
   "publish_version": true,
   "alias": "${lambdas_alias_name}",
   "url_config": {},
