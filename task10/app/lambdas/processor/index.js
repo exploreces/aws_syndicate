@@ -16,7 +16,7 @@ exports.handler = async (event) => {
     console.log("Request Path:", path);
     console.log("HTTP Method:", method);
 
-    if (method === "GET" && path === "/weather") {
+     if (method === "GET" && (path === "/" || path === "/weather")) {
         try {
             const url = "https://api.open-meteo.com/v1/forecast?latitude=50.4375&longitude=30.5&hourly=temperature_2m&timezone=auto";
             console.log("Fetching weather data from:", url);
