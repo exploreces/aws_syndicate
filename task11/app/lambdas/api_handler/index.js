@@ -1,105 +1,131 @@
 import AWS from 'aws-sdk';
+import { v4 as uuidv4 } from 'uuid';
+
+// Environment Variables (Injected by AWS-Syndicate Aliases)
+const USER_POOL_ID = process.env.booking_userpool;
+const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID;
+const TABLES_TABLE = process.env.tables_table;
+const RESERVATIONS_TABLE = process.env.reservations_table;
 
 const cognito = new AWS.CognitoIdentityServiceProvider();
-const USER_POOL_ID = process.env.USER_POOL_ID;
-const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID;
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
-export const signup = async (event) => {
-  try {
-    console.log("Signup request received");
-
-    let requestBody;
+// Helper: Validate Token
+const validateToken = async (token) => {
     try {
-      requestBody = JSON.parse(event.body);
-    } catch (parseError) {
-      console.warn("Invalid JSON format in request");
-      return { statusCode: 400, body: JSON.stringify({ error: "Invalid request format." }) };
+        const params = { AccessToken: token };
+        const response = await cognito.getUser(params).promise();
+        return response;
+    } catch (error) {
+        return null;
     }
-
-    const { firstName, lastName, email, password } = requestBody;
-
-    if (!firstName || !lastName || !email || !password) {
-      console.warn("Missing fields in signup request");
-      return { statusCode: 400, body: JSON.stringify({ error: "All fields are required." }) };
-    }
-
-    const emailRegex = /^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
-      console.warn("Invalid email format");
-      return { statusCode: 400, body: JSON.stringify({ error: "Invalid email format." }) };
-    }
-
-    const passwordPolicyRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-    if (!passwordPolicyRegex.test(password)) {
-      console.warn("Invalid password format");
-      return { statusCode: 400, body: JSON.stringify({ error: "Invalid password format. Password must be at least 8 characters and include uppercase, lowercase, number, and a special character." }) };
-    }
-
-    await cognito.adminCreateUser({
-      UserPoolId: USER_POOL_ID,
-      Username: email,
-      UserAttributes: [
-        { Name: "given_name", Value: firstName },
-        { Name: "family_name", Value: lastName },
-        { Name: "email", Value: email }
-      ],
-      MessageAction: "SUPPRESS",
-    }).promise();
-
-    await cognito.adminSetUserPassword({
-      UserPoolId: USER_POOL_ID,
-      Username: email,
-      Password: password,
-      Permanent: true,
-    }).promise();
-
-    await cognito.adminConfirmSignUp({
-      UserPoolId: USER_POOL_ID,
-      Username: email,
-    }).promise();
-
-    console.log("User signup successful:", email);
-    return { statusCode: 201, body: JSON.stringify({ message: "User created successfully" }) };
-  } catch (error) {
-    console.error("Signup error:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: "Signup failed due to an unexpected error." }) };
-  }
 };
 
+// Signup Handler
+export const signup = async (event) => {
+    try {
+        const { firstName, lastName, email, password } = JSON.parse(event.body);
+        const params = {
+            UserPoolId: USER_POOL_ID,
+            Username: email,
+            TemporaryPassword: password,
+            UserAttributes: [
+                { Name: 'email', Value: email },
+                { Name: 'given_name', Value: firstName },
+                { Name: 'family_name', Value: lastName }
+            ],
+            MessageAction: 'SUPPRESS' // Avoid email quota issues
+        };
+        await cognito.adminCreateUser(params).promise();
+        return { statusCode: 200, body: JSON.stringify({ message: 'Signup successful' }) };
+    } catch (error) {
+        return { statusCode: 400, body: JSON.stringify({ error: error.message }) };
+    }
+};
+
+// Signin Handler
 export const signin = async (event) => {
-  try {
-    console.log("Signin request received");
-    const { email, password } = JSON.parse(event.body);
-
-    const params = {
-      AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
-      UserPoolId: USER_POOL_ID,
-      ClientId: COGNITO_CLIENT_ID,
-      AuthParameters: {
-        USERNAME: email,
-        PASSWORD: password
-      }
-    };
-
-    const data = await cognito.adminInitiateAuth(params).promise();
-
-    if (!data || !data.AuthenticationResult) {
-      console.warn("Authentication failed for user:", email);
-      return { statusCode: 400, body: JSON.stringify({ error: "Authentication failed." }) };
+    try {
+        const { email, password } = JSON.parse(event.body);
+        const params = {
+            AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
+            UserPoolId: USER_POOL_ID,
+            ClientId: COGNITO_CLIENT_ID,
+            AuthParameters: { USERNAME: email, PASSWORD: password }
+        };
+        const data = await cognito.adminInitiateAuth(params).promise();
+        return { statusCode: 200, body: JSON.stringify({ accessToken: data.AuthenticationResult.IdToken }) };
+    } catch (error) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Authentication failed' }) };
     }
+};
 
-    console.log("Signin successful for:", email);
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ accessToken: data.AuthenticationResult.AccessToken })
-    };
-  } catch (error) {
-    console.error("Signin error:", error);
-
-    if (error.code === "UserNotFoundException") {
-      return { statusCode: 400, body: JSON.stringify({ error: "User does not exist." }) };
+// Get Tables
+export const getTables = async (event) => {
+    if (!validateToken(event.headers.Authorization)) {
+        return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
     }
+    try {
+        const data = await dynamoDB.scan({ TableName: TABLES_TABLE }).promise();
+        return { statusCode: 200, body: JSON.stringify({ tables: data.Items }) };
+    } catch (error) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Could not fetch tables' }) };
+    }
+};
 
-    return { statusCode: 400, body: JSON.stringify({ error: "Authentication failed" }) };
-  }
+// Create Table
+export const createTable = async (event) => {
+    if (!validateToken(event.headers.Authorization)) {
+        return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+    }
+    try {
+        const table = JSON.parse(event.body);
+        await dynamoDB.put({ TableName: TABLES_TABLE, Item: table }).promise();
+        return { statusCode: 200, body: JSON.stringify({ id: table.id }) };
+    } catch (error) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Could not create table' }) };
+    }
+};
+
+// Get Table by ID
+export const getTableById = async (event) => {
+    if (!validateToken(event.headers.Authorization)) {
+        return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+    }
+    try {
+        const tableId = event.pathParameters.tableId;
+        const data = await dynamoDB.get({ TableName: TABLES_TABLE, Key: { id: parseInt(tableId) } }).promise();
+        if (!data.Item) return { statusCode: 404, body: JSON.stringify({ error: 'Table not found' }) };
+        return { statusCode: 200, body: JSON.stringify(data.Item) };
+    } catch (error) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Could not fetch table' }) };
+    }
+};
+
+// Create Reservation
+export const createReservation = async (event) => {
+    if (!validateToken(event.headers.Authorization)) {
+        return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+    }
+    try {
+        const reservation = JSON.parse(event.body);
+        const reservationId = uuidv4();
+        await dynamoDB.put({ TableName: RESERVATIONS_TABLE, Item: { ...reservation, reservationId } }).promise();
+        return { statusCode: 200, body: JSON.stringify({ reservationId }) };
+    } catch (error) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Could not create reservation' }) };
+    }
+};
+
+// Get Reservations
+export const getReservations = async (event) => {
+    if (!validateToken(event.headers.Authorization)) {
+        return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+    }
+    try {
+        const data = await dynamoDB.scan({ TableName: RESERVATIONS_TABLE }).promise();
+        return { statusCode: 200, body: JSON.stringify({ reservations: data.Items }) };
+    } catch (error) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Could not fetch reservations' }) };
+    }
 };
