@@ -59,7 +59,7 @@ async function signup(body) {
 
     try {
         // Remove this:
-        await cognito.adminConfirmSignUp(confirmParams).promise();
+        await cognito.signUp(signUpParams).promise();
 
 
         // Confirm user signup so they don't remain in "UNCONFIRMED" state
