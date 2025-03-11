@@ -8,7 +8,7 @@ const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 // Environment variables
 const USER_POOL_ID = process.env.booking_userpool;
-const TABLES_TABLE = process.env.TablesDb;
+const TABLES_TABLE = process.env.tables_table;
 const RESERVATIONS_TABLE = process.env.reservations_table;
 const CLIENT_ID = process.env.cup_client_id;
 
