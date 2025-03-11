@@ -48,11 +48,12 @@ exports.handler = async (event) => {
 };
 
 async function signup(body) {
-    const {username, password, email} = body;
+    const {firstName,lastName, password, email} = body;
 
     const signUpParams = {
-        ClientId: process.env.cup_client_id, // Use correct client ID
-        Username: username,
+        //ClientId: process.env.cup_client_id, // Use correct client ID
+        firstName: firstName,
+        lastName: lastName,
         Password: password,
         UserAttributes: [{Name: "email", Value: email}]
     };
@@ -77,13 +78,13 @@ async function signup(body) {
 }
 
 async function signin(body) {
-    const {username, password} = body;
+    const {email, password} = body;
 
     const params = {
         AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
         UserPoolId: USER_POOL_ID,
         ClientId: process.env.cup_client_id, // Set in env variables
-        AuthParameters: {USERNAME: username, PASSWORD: password},
+        AuthParameters: {EMAIl:email, PASSWORD: password},
     };
 
     try {
