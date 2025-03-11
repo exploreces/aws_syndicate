@@ -6,17 +6,18 @@ const jwt = require("jsonwebtoken");
 const cognito = new AWS.CognitoIdentityServiceProvider();
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
-// Environment variables from deployment_resources.json
+// Environment variables
 const USER_POOL_ID = process.env.booking_userpool;
 const TABLES_TABLE = process.env.tables_table;
 const RESERVATIONS_TABLE = process.env.reservations_table;
+const CLIENT_ID = process.env.cup_client_id;
+
 exports.handler = async (event) => {
     console.log("Received event:", JSON.stringify(event, null, 2));
 
     try {
-        const {httpMethod, path} = event;
+        const { httpMethod, path } = event;
 
-        // Handle different API routes
         if (httpMethod === "POST" && path === "/signup") {
             return await signup(JSON.parse(event.body));
         }
@@ -40,78 +41,88 @@ exports.handler = async (event) => {
             return await createReservation(JSON.parse(event.body));
         }
 
-        return sendResponse(400, {message: "Invalid Request"});
+        return sendResponse(400, { message: "Invalid Request" });
     } catch (error) {
         console.error("Error:", error);
-        return sendResponse(500, {error: "Internal Server Error"});
+        return sendResponse(500, { error: "Internal Server Error" });
     }
 };
 
+// ✅ FIXED: Corrected signup function to use `AdminCreateUser`
 async function signup(body) {
-    const {firstName,lastName, password, email} = body;
+    const { firstName, lastName, email, password } = body;
 
-    const signUpParams = {
-        //ClientId: process.env.cup_client_id, // Use correct client ID
-        firstName: firstName,
-        lastName: lastName,
-        Password: password,
-        UserAttributes: [{Name: "email", Value: email}]
+    const params = {
+        UserPoolId: USER_POOL_ID,
+        Username: email,  // ✅ Use email as username
+        TemporaryPassword: password,
+        UserAttributes: [
+            { Name: "email", Value: email },
+            { Name: "given_name", Value: firstName },
+            { Name: "family_name", Value: lastName }
+        ],
+        MessageAction: "SUPPRESS"  // ✅ Avoid email quota issues
     };
 
     try {
-        // Remove this:
-        await cognito.signUp(signUpParams).promise();
+        await cognito.adminCreateUser(params).promise();
 
+        // ✅ Manually set password to avoid "temporary password" issue
+        await cognito.adminSetUserPassword({
+            UserPoolId: CLIENT_ID,
+            Username: email,
+            Password: password,
+            Permanent: true
+        }).promise();
 
-        // Confirm user signup so they don't remain in "UNCONFIRMED" state
-        const confirmParams = {
-            UserPoolId: USER_POOL_ID,
-            Username: username
-        };
-        await cognito.adminConfirmSignUp(confirmParams).promise();
-
-        return sendResponse(201, {message: "User registered successfully"});
+        return sendResponse(201, { message: "User registered successfully" });
     } catch (error) {
         console.error("Signup Error:", error);
-        return sendResponse(400, {error: error.message});
+        return sendResponse(400, { error: error.message });
     }
 }
 
+// ✅ FIXED: Corrected sign-in function to use email instead of username
 async function signin(body) {
-    const {email, password} = body;
+    const { email, password } = body;
 
     const params = {
         AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
         UserPoolId: USER_POOL_ID,
-        ClientId: process.env.cup_client_id, // Set in env variables
-        AuthParameters: {EMAIl:email, PASSWORD: password},
+        ClientId: CLIENT_ID,  // ✅ Ensure correct Client ID
+        AuthParameters: {
+            USERNAME: email,  // ✅ Use email instead of username
+            PASSWORD: password
+        }
     };
 
     try {
         const result = await cognito.adminInitiateAuth(params).promise();
-        return sendResponse(200, {token: result.AuthenticationResult.IdToken});
+        return sendResponse(200, { accessToken: result.AuthenticationResult.IdToken });
     } catch (error) {
         console.error("Signin Error:", error);
-        return sendResponse(400, {error: "Invalid credentials"});
+        return sendResponse(400, { error: "Invalid credentials" });
     }
 }
 
 async function getTables() {
-    const params = {TableName: TABLES_TABLE};
+    const params = { TableName: TABLES_TABLE };
 
     try {
         const data = await dynamoDB.scan(params).promise();
-        return sendResponse(200, {tables: data.Items});
+        return sendResponse(200, { tables: data.Items });
     } catch (error) {
-        return sendResponse(500, {error: "Could not fetch tables"});
+        return sendResponse(500, { error: "Could not fetch tables" });
     }
 }
 
 async function createTable(body) {
     const table = {
         id: AWS.util.uuid.v4(),
-        name: body.name,
-        capacity: body.capacity,
+        number: body.number,
+        places: body.places,
+        isVip: body.isVip || false,
+        minOrder: body.minOrder || null
     };
 
     const params = {
@@ -121,44 +132,47 @@ async function createTable(body) {
 
     try {
         await dynamoDB.put(params).promise();
-        return sendResponse(201, {message: "Table created", table});
+        return sendResponse(201, { message: "Table created", table });
     } catch (error) {
-        return sendResponse(500, {error: "Could not create table"});
+        return sendResponse(500, { error: "Could not create table" });
     }
 }
 
 async function getTableById(tableId) {
     const params = {
         TableName: TABLES_TABLE,
-        Key: {id: tableId},
+        Key: { id: tableId },
     };
 
     try {
         const data = await dynamoDB.get(params).promise();
-        if (!data.Item) return sendResponse(404, {error: "Table not found"});
-        return sendResponse(200, {table: data.Item});
+        if (!data.Item) return sendResponse(404, { error: "Table not found" });
+        return sendResponse(200, { table: data.Item });
     } catch (error) {
-        return sendResponse(500, {error: "Could not fetch table"});
+        return sendResponse(500, { error: "Could not fetch table" });
     }
 }
 
 async function getReservations() {
-    const params = {TableName: RESERVATIONS_TABLE};
+    const params = { TableName: RESERVATIONS_TABLE };
 
     try {
         const data = await dynamoDB.scan(params).promise();
-        return sendResponse(200, {reservations: data.Items});
+        return sendResponse(200, { reservations: data.Items });
     } catch (error) {
-        return sendResponse(500, {error: "Could not fetch reservations"});
+        return sendResponse(500, { error: "Could not fetch reservations" });
     }
 }
 
 async function createReservation(body) {
     const reservation = {
         id: AWS.util.uuid.v4(),
-        tableId: body.tableId,
-        customer: body.customer,
+        tableNumber: body.tableNumber,
+        clientName: body.clientName,
+        phoneNumber: body.phoneNumber,
         date: body.date,
+        slotTimeStart: body.slotTimeStart,
+        slotTimeEnd: body.slotTimeEnd
     };
 
     const params = {
@@ -168,16 +182,16 @@ async function createReservation(body) {
 
     try {
         await dynamoDB.put(params).promise();
-        return sendResponse(201, {message: "Reservation created", reservation});
+        return sendResponse(201, { message: "Reservation created", reservation });
     } catch (error) {
-        return sendResponse(500, {error: "Could not create reservation"});
+        return sendResponse(500, { error: "Could not create reservation" });
     }
 }
 
 function sendResponse(statusCode, body) {
     return {
         statusCode,
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
     };
 }
