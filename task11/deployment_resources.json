@@ -37,7 +37,7 @@
   "${booking_userpool}": {
     "resource_type": "cognito_idp",
     "password_policy": {
-      "minimum_length": 6,
+      "minimum_length": 8,
       "require_uppercase": true,
       "require_symbols": true,
       "require_lowercase": true,
