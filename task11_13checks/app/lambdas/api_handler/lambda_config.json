@@ -15,9 +15,10 @@
     }
   ],
   "event_sources": [],
+
   "env_variables": {
-    "TablesDb": "${tables_table}",
-    "ReservationDb": "${reservations_table}",
+    "tables_table": "${tables_table}",
+    "reservations_table": "${reservations_table}",
     "booking_userpool": "${booking_userpool}",
     "cup_id": {
       "resource_name": "${booking_userpool}",
