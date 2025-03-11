@@ -15,7 +15,16 @@
     }
   ],
   "event_sources": [
-
+    {
+      "resource_type": "dynamodb_trigger",
+      "target_table": "Tables",
+      "batch_size": 1
+    },
+    {
+      "resource_type": "dynamodb_trigger",
+      "target_table": "Reservations",
+      "batch_size": 1
+    }
   ],
 
   "env_variables": {
@@ -38,7 +47,9 @@
 
   "publish_version": true,
   "alias": "${lambdas_alias_name}",
-  "url_config": {},
+  "url_config": {
+    "auth_type": "NONE"
+  },
   "ephemeral_storage": 512,
   "tags": {}
 }
