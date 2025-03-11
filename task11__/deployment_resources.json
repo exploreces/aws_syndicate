@@ -37,25 +37,16 @@
   "${booking_userpool}": {
     "resource_type": "cognito_idp",
     "password_policy": {
-      "minimum_length": 12,
+      "minimum_length": 8,
       "require_uppercase": true,
       "require_symbols": true,
       "require_lowercase": true,
       "require_numbers": true
     },
-    "auto_verified_attributes": [],
+    "auto_verified_attributes": ["email"],
     "sms_configuration": {},
     "username_attributes": [],
-    "custom_attributes": [
-      {
-        "name": "lastName",
-        "type": "String"
-      },
-      {
-        "name": "firstName",
-        "type": "String"
-      }
-    ],
+    "custom_attributes": [],
     "client": {
       "client_name": "client-app",
       "generate_secret": false,
@@ -65,7 +56,8 @@
         "ALLOW_USER_SRP_AUTH",
         "ALLOW_REFRESH_TOKEN_AUTH"
       ]
-    }
+    },
+    "tags": {}
   },
   "task11_api": {
     "resource_type": "api_gateway",

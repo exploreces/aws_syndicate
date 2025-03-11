@@ -48,67 +48,50 @@ exports.handler = async (event) => {
     }
 };
 
-// Get the correct User Pool ID format
-async function getUserPoolId() {
-    try {
-        const response = await cognito.listUserPools({ MaxResults: 10 }).promise();
-        const userPool = response.UserPools.find(pool => pool.Name.includes("simple-booking-userpool"));
-        if (!userPool) throw new Error("User Pool not found.");
-        return userPool.Id;
-    } catch (error) {
-        console.error("Error fetching User Pool ID:", error);
-        throw error;
-    }
-}
-
+// ✅ FIXED: Corrected signup function to use `AdminCreateUser`
 async function signup(body) {
     const { firstName, lastName, email, password } = body;
 
-    // Get the correctly formatted User Pool ID
-    const userPoolId = await getUserPoolId();
-
     const params = {
-        UserPoolId: userPoolId,
-        Username: email,  // Use email as username
+        UserPoolId: USER_POOL_ID,
+        Username: email,  // ✅ Use email as username
         TemporaryPassword: password,
         UserAttributes: [
             { Name: "email", Value: email },
             { Name: "given_name", Value: firstName },
             { Name: "family_name", Value: lastName }
         ],
-        MessageAction: "SUPPRESS"  // Avoid email quota issues
+        MessageAction: "SUPPRESS"  // ✅ Avoid email quota issues
     };
 
     try {
         await cognito.adminCreateUser(params).promise();
 
-        // Manually set password to avoid "temporary password" issue
+        // ✅ Manually set password to avoid "temporary password" issue
         await cognito.adminSetUserPassword({
-            UserPoolId: userPoolId,
+            UserPoolId: CLIENT_ID,
             Username: email,
             Password: password,
             Permanent: true
         }).promise();
 
-        return sendResponse(200, { message: "User registered successfully" });
+        return sendResponse(201, { message: "User registered successfully" });
     } catch (error) {
         console.error("Signup Error:", error);
         return sendResponse(400, { error: error.message });
     }
 }
 
+// ✅ FIXED: Corrected sign-in function to use email instead of username
 async function signin(body) {
     const { email, password } = body;
 
-    // Get the correctly formatted User Pool ID
-    const userPoolId = await getUserPoolId();
-
     const params = {
         AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
-        UserPoolId: userPoolId,  // Use the correctly formatted User Pool ID
-        ClientId: CLIENT_ID,
+        UserPoolId: USER_POOL_ID,
+        ClientId: CLIENT_ID,  // ✅ Ensure correct Client ID
         AuthParameters: {
-            USERNAME: email,
+            USERNAME: email,  // ✅ Use email instead of username
             PASSWORD: password
         }
     };
