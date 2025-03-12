@@ -47,6 +47,27 @@
       "require_lowercase": true,
       "require_numbers": true
     },
+
+    "${tables_table}": {
+      "resource_type": "dynamodb_table",
+      "hash_key_name": "id",
+      "hash_key_type": "S",
+      "read_capacity": 1,
+      "write_capacity": 1,
+      "global_indexes": [],
+      "autoscaling": [],
+      "tags": {}
+    },
+    "${reservations_table}": {
+      "resource_type": "dynamodb_table",
+      "hash_key_name": "id",
+      "hash_key_type": "S",
+      "read_capacity": 1,
+      "write_capacity": 1,
+      "global_indexes": [],
+      "autoscaling": [],
+      "tags": {}
+    },
     "auto_verified_attributes": [],
     "sms_configuration": {},
     "username_attributes": [],
