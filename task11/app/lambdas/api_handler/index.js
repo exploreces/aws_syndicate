@@ -245,6 +245,7 @@
 //}
 //
 
+
 import AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -258,73 +259,73 @@ const CLIENT_ID = process.env.cup_client_id;
 const TABLES_TABLE = process.env.tables_table;
 const RESERVATIONS_TABLE = process.env.reservations_table;
 
-// Ensure required env variables are set
-console.log("ENV VARIABLES:");
-console.log("USER_POOL_ID:", USER_POOL_ID);
-console.log("CLIENT_ID:", CLIENT_ID);
-console.log("TABLES_TABLE:", TABLES_TABLE);
-console.log("RESERVATIONS_TABLE:", RESERVATIONS_TABLE);
-
 // Main handler function
 export const handler = async (event, context) => {
-  console.log('=== EVENT RECEIVED ===');
+  console.log('===== Incoming Event =====');
   console.log(JSON.stringify(event, null, 2));
 
   try {
     const path = event.resource;
     const httpMethod = event.httpMethod;
-
-    console.log(`Handling request - Path: ${path}, Method: ${httpMethod}`);
+    console.log(`Handling request: ${httpMethod} ${path}`);
 
     let response;
 
-    // Route requests
     if (path === '/signup' && httpMethod === 'POST') {
+      console.log("🔹 Processing Signup...");
       response = await handleSignup(event);
     } else if (path === '/signin' && httpMethod === 'POST') {
+      console.log("🔹 Processing Signin...");
       response = await handleSignin(event);
+    } else if (path === '/tables' && httpMethod === 'GET') {
+      console.log("🔹 Fetching All Tables...");
+      response = await handleGetTables(event);
+    } else if (path === '/tables' && httpMethod === 'POST') {
+      console.log("🔹 Creating a New Table...");
+      response = await handleCreateTable(event);
+    } else if (path === '/tables/{tableId}' && httpMethod === 'GET') {
+      console.log("🔹 Fetching Table by ID...");
+      response = await handleGetTableById(event);
+    } else if (path === '/reservations' && httpMethod === 'GET') {
+      console.log("🔹 Fetching Reservations...");
+      response = await handleGetReservations(event);
+    } else if (path === '/reservations' && httpMethod === 'POST') {
+      console.log("🔹 Creating a Reservation...");
+      response = await handleCreateReservation(event);
     } else {
-      console.warn(`No matching route found for path: ${path} and method: ${httpMethod}`);
+      console.warn("❌ Route Not Found!");
       response = formatResponse(404, { message: 'Not Found' });
     }
 
+    console.log("✅ Response Sent:", JSON.stringify(response, null, 2));
     return response;
   } catch (error) {
-    console.error('Error in handler:', error);
+    console.error("🔥 ERROR:", error);
     return formatResponse(500, { message: 'Internal Server Error', error: error.message });
   }
 };
 
-// Helper function for formatting responses
-function formatResponse(statusCode, body) {
-  console.log(`Response - Status: ${statusCode}, Body:`, JSON.stringify(body, null, 2));
+// Helper functions for CORS headers
+function corsHeaders() {
   return {
-    statusCode,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-      'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
+    'Content-Type': 'application/json'
   };
 }
 
-// **SIGNUP HANDLER**
+// Helper function for formatting responses
+function formatResponse(statusCode, body) {
+  console.log(`📩 Sending Response (Status ${statusCode}):`, JSON.stringify(body, null, 2));
+  return { statusCode, headers: corsHeaders(), body: JSON.stringify(body) };
+}
+
+// Authentication handlers
 async function handleSignup(event) {
   try {
-    console.log("Processing signup request...");
-    const body = JSON.parse(event.body);
-    console.log("Signup Payload:", JSON.stringify(body, null, 2));
-
-    const { firstName, lastName, email, password } = body;
-
-    if (!firstName || !lastName || !email || !password) {
-      console.warn("Signup failed - Missing required fields.");
-      return formatResponse(400, { error: "All fields are required." });
-    }
-
-    console.log(`Creating user in Cognito - Email: ${email}`);
+    const { firstName, lastName, email, password } = JSON.parse(event.body);
+    console.log("📌 Signup Request:", { firstName, lastName, email });
 
     await cognito.adminCreateUser({
       UserPoolId: USER_POOL_ID,
@@ -332,116 +333,90 @@ async function handleSignup(event) {
       UserAttributes: [
         { Name: "given_name", Value: firstName },
         { Name: "family_name", Value: lastName },
-        { Name: "email", Value: email },
+        { Name: "email", Value: email }
       ],
       TemporaryPassword: password,
       MessageAction: "SUPPRESS",
     }).promise();
 
-    console.log(`User successfully created in Cognito - Email: ${email}`);
+    console.log("✅ Signup Successful for:", email);
     return formatResponse(200, { message: "User created successfully." });
   } catch (error) {
-    console.error("Signup Error:", error);
-    return formatResponse(502, { error: "Signup failed.", details: error.message });
+    console.error("❌ Signup Error:", error);
+    return formatResponse(502, { error: "Signup failed." });
   }
 }
 
-// **SIGNIN HANDLER**
 async function handleSignin(event) {
   try {
-    console.log("Processing signin request...");
-    const body = JSON.parse(event.body);
-    console.log("Signin Payload:", JSON.stringify(body, null, 2));
-
-    const { email, password } = body;
-
-    console.log(`Fetching user from Cognito - Email: ${email}`);
+    const { email, password } = JSON.parse(event.body);
+    console.log("📌 Signin Request for:", email);
 
     const getUserParams = {
       UserPoolId: USER_POOL_ID,
       Filter: `email = "${email}"`,
-      Limit: 1,
+      Limit: 1
     };
     const users = await cognito.listUsers(getUserParams).promise();
+    console.log("👤 Cognito Users Found:", users.Users.length);
 
-    if (!users.Users.length) {
-      console.warn(`Signin failed - User not found in Cognito: ${email}`);
-      return formatResponse(400, { error: "User does not exist in Cognito." });
-    }
+    if (!users.Users.length) return formatResponse(400, { error: "User does not exist in Cognito." });
 
     const username = users.Users[0].Username;
-    console.log(`User found in Cognito - Username: ${username}`);
+    console.log("🔑 Authenticating User:", username);
 
-    const authParams = {
+    const params = {
       AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
       UserPoolId: USER_POOL_ID,
       ClientId: CLIENT_ID,
-      AuthParameters: {
-        USERNAME: username,
-        PASSWORD: password,
-      },
+      AuthParameters: { USERNAME: username, PASSWORD: password }
     };
+    const authResponse = await cognito.adminInitiateAuth(params).promise();
+    console.log("✅ Signin Successful for:", username);
 
-    console.log("Attempting authentication...");
-    const authResponse = await cognito.adminInitiateAuth(authParams).promise();
-
-    if (authResponse.ChallengeName === "NEW_PASSWORD_REQUIRED") {
-      console.log("User requires password change - Sending new password...");
-      const challengeParams = {
-        ChallengeName: "NEW_PASSWORD_REQUIRED",
-        ClientId: CLIENT_ID,
-        UserPoolId: USER_POOL_ID,
-        ChallengeResponses: {
-          USERNAME: username,
-          NEW_PASSWORD: "Pooja@123",
-        },
-        Session: authResponse.Session,
-      };
-      const finalAuthResponse = await cognito.adminRespondToAuthChallenge(challengeParams).promise();
-      console.log("Password updated successfully.");
-      return formatResponse(200, {
-        message: "Password updated successfully.",
-        accessToken: finalAuthResponse.AuthenticationResult?.IdToken,
-      });
-    }
-
-    console.log("Authentication successful.");
     return formatResponse(200, { accessToken: authResponse.AuthenticationResult?.IdToken });
-
   } catch (error) {
-    console.error("Signin Error:", error);
-    let errorMessage = "Authentication failed.";
-    if (error.code === "UserNotFoundException") {
-      errorMessage = "User does not exist.";
-    } else if (error.code === "NotAuthorizedException") {
-      errorMessage = "Incorrect username or password.";
-    } else if (error.code === "InvalidParameterException") {
-      errorMessage = "Invalid request parameters.";
-    }
-    return formatResponse(400, { error: errorMessage, details: error.message });
+    console.error("❌ Signin Error:", error);
+    return formatResponse(400, { error: "Authentication failed.", details: error.message });
   }
 }
 
-// **HELPER FUNCTION - EXTRACT USERNAME FROM TOKEN**
+// Table management handlers
+async function handleGetTables(event) {
+  console.log("📌 Fetching all tables from:", TABLES_TABLE);
+  const result = await dynamodb.scan({ TableName: TABLES_TABLE }).promise();
+  console.log("✅ Tables Retrieved:", result.Items.length);
+  return formatResponse(200, result.Items);
+}
+
+async function handleCreateTable(event) {
+  const body = JSON.parse(event.body);
+  const { number, capacity, location } = body;
+  const tableId = uuidv4();
+  console.log("📌 Creating Table with:", { tableId, number, capacity, location });
+
+  await dynamodb.put({
+    TableName: TABLES_TABLE,
+    Item: { id: tableId, number, capacity, location, createdAt: new Date().toISOString() }
+  }).promise();
+
+  console.log("✅ Table Created:", tableId);
+  return formatResponse(200, { id: tableId, number, capacity, location });
+}
+
+// Helper function to extract username from token
 function getUsernameFromToken(event) {
   try {
-    console.log('Extracting username from token...');
-    console.log('Request Context:', JSON.stringify(event.requestContext || {}));
-
+    console.log('🔍 Extracting Username from Token...');
     if (event.requestContext?.authorizer?.claims) {
       const username = event.requestContext.authorizer.claims['cognito:username'];
-      console.log('Extracted Username:', username);
+      console.log('✅ Username Extracted:', username);
       return username;
     }
-
-    if (event.headers?.Authorization) {
-      console.warn('Auth header present, but requestContext.authorizer is missing.');
-    }
-
-    console.warn('No valid authorization found in request');
+    console.warn('⚠️ No valid authorization found in request.');
     return null;
   } catch (error) {
-    console.error('Error extracting username from token:', error);
+    console.error('❌ Error Extracting Username:', error);
     return null;
   }
 }
