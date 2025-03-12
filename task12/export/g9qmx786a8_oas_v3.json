@@ -17,9 +17,11 @@
   "paths": {
     "/reservations": {
       "get": {
+        "summary": "Get all reservations",
+        "description": "Retrieves all reservations for the authenticated user",
         "responses": {
           "200": {
-            "description": "200 response",
+            "description": "Successful operation",
             "headers": {
               "Access-Control-Allow-Origin": {
                 "schema": {
@@ -30,7 +32,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Empty"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reservation"
+                  }
                 }
               }
             }
@@ -57,9 +62,21 @@
         }
       },
       "post": {
+        "summary": "Create a new reservation",
+        "description": "Creates a new reservation for a table",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReservationRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "200 response",
+            "description": "Reservation created successfully",
             "headers": {
               "Access-Control-Allow-Origin": {
                 "schema": {
@@ -70,7 +87,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Empty"
+                  "$ref": "#/components/schemas/Reservation"
                 }
               }
             }
@@ -147,9 +164,11 @@
     },
     "/tables": {
       "get": {
+        "summary": "Get all tables",
+        "description": "Retrieves all available tables",
         "responses": {
           "200": {
-            "description": "200 response",
+            "description": "List of tables successfully retrieved",
             "headers": {
               "Access-Control-Allow-Origin": {
                 "schema": {
@@ -160,7 +179,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Empty"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Table"
+                  }
                 }
               }
             }
@@ -187,9 +209,21 @@
         }
       },
       "post": {
+        "summary": "Create a new table",
+        "description": "Creates a new table",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TableRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "200 response",
+            "description": "Table created successfully",
             "headers": {
               "Access-Control-Allow-Origin": {
                 "schema": {
@@ -200,7 +234,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Empty"
+                  "$ref": "#/components/schemas/Table"
                 }
               }
             }
@@ -277,9 +311,21 @@
     },
     "/signin": {
       "post": {
+        "summary": "User sign in",
+        "description": "Authenticates a user and returns a JWT token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "200 response",
+            "description": "Authentication successful",
             "headers": {
               "Access-Control-Allow-Origin": {
                 "schema": {
@@ -290,7 +336,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Empty"
+                  "$ref": "#/components/schemas/AuthResponse"
                 }
               }
             }
@@ -362,6 +408,8 @@
     },
     "/tables/{tableId}": {
       "get": {
+        "summary": "Get table by ID",
+        "description": "Retrieves a specific table by its ID",
         "parameters": [
           {
             "name": "tableId",
@@ -374,7 +422,7 @@
         ],
         "responses": {
           "200": {
-            "description": "200 response",
+            "description": "Table successfully retrieved",
             "headers": {
               "Access-Control-Allow-Origin": {
                 "schema": {
@@ -385,7 +433,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Empty"
+                  "$ref": "#/components/schemas/Table"
                 }
               }
             }
@@ -472,9 +520,21 @@
     },
     "/signup": {
       "post": {
+        "summary": "User sign up",
+        "description": "Registers a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignUpRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "200 response",
+            "description": "User successfully registered",
             "headers": {
               "Access-Control-Allow-Origin": {
                 "schema": {
@@ -485,7 +545,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Empty"
+                  "$ref": "#/components/schemas/AuthResponse"
                 }
               }
             }
@@ -561,6 +621,134 @@
       "Empty": {
         "title": "Empty Schema",
         "type": "object"
+      },
+      "Table": {
+        "type": "object",
+        "properties": {
+          "tableId": {
+            "type": "string"
+          },
+          "tableNumber": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "location": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TableRequest": {
+        "type": "object",
+        "properties": {
+          "tableNumber": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "location": {
+            "type": "string"
+          }
+        },
+        "required": ["tableNumber", "capacity"]
+      },
+      "Reservation": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "string"
+          },
+          "tableId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "reservationTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "partySize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["confirmed", "pending", "cancelled"]
+          },
+          "specialRequests": {
+            "type": "string"
+          }
+        }
+      },
+      "ReservationRequest": {
+        "type": "object",
+        "properties": {
+          "tableId": {
+            "type": "string"
+          },
+          "reservationTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "partySize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "specialRequests": {
+            "type": "string"
+          }
+        },
+        "required": ["tableId", "reservationTime", "partySize"]
+      },
+      "SignInRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": ["username", "password"]
+      },
+      "SignUpRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": ["username", "email", "password"]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -570,8 +758,8 @@
         "in": "header",
         "x-amazon-apigateway-authtype": "cognito_user_pools",
         "x-amazon-apigateway-authorizer": {
-          "x-syndicate-cognito-userpool-names": [
-            "${booking_userpool}"
+          "providerARNs": [
+            "arn:aws:cognito-idp:eu-west-1:376129861747:userpool/simple-booking-userpool"
           ],
           "type": "cognito_user_pools"
         }
