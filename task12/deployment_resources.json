@@ -12,16 +12,19 @@
             "dynamodb:PutItem",
             "dynamodb:Batch*",
             "dynamodb:DeleteItem",
+            "ssm:PutParameter",
+            "ssm:GetParameter",
+            "kms:Decrypt",
             "dynamodb:Scan",
+            "s3:GetObject",
             "cognito-idp:DescribeUserPool",
             "cognito-idp:GetUser",
             "cognito-idp:ListUsers",
             "cognito-idp:AdminCreateUser",
             "cognito-idp:AdminInitiateAuth",
+            "cognito-idp:AdminSetUserPassword",
             "cognito-idp:GetIdentityProviderByIdentifier",
             "cognito-idp:ListUserPools",
-            "cognito-idp:SignUp",
-            "cognito-idp:AdminSetUserPassword",
             "cognito-idp:ListUserPoolClients",
             "cognito-idp:AdminRespondToAuthChallenge",
             "cognito-idp:AdminConfirmSignUp"
@@ -32,12 +35,13 @@
       ],
       "Version": "2012-10-17"
     },
-    "resource_type": "iam_policy"
+    "resource_type": "iam_policy",
+    "tags": {}
   },
   "${booking_userpool}": {
     "resource_type": "cognito_idp",
     "password_policy": {
-      "minimum_length": 12,
+      "minimum_length": 8,
       "require_uppercase": true,
       "require_symbols": true,
       "require_lowercase": true,
@@ -46,16 +50,7 @@
     "auto_verified_attributes": [],
     "sms_configuration": {},
     "username_attributes": [],
-    "custom_attributes": [
-      {
-        "name": "lastName",
-        "type": "String"
-      },
-      {
-        "name": "firstName",
-        "type": "String"
-      }
-    ],
+    "custom_attributes": [],
     "client": {
       "client_name": "client-app",
       "generate_secret": false,
@@ -65,16 +60,23 @@
         "ALLOW_USER_SRP_AUTH",
         "ALLOW_REFRESH_TOKEN_AUTH"
       ]
-    }
+    },
+    "tags": {}
   },
-  "task11_api": {
-    "resource_type": "api_gateway",
+  "task12_api": {
+    "resource_type": "api_gateway_oas_v3",
     "deploy_stage": "api",
-    "dependencies": [],
+    "dependencies": [
+      {
+        "resource_name": "${booking_userpool}",
+        "resource_type": "cognito_idp"
+      }
+    ],
     "resources": {
       "/signin": {
         "enable_cors": true,
         "POST": {
+          "enable_proxy": true,
           "authorization_type": "NONE",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
@@ -83,13 +85,13 @@
           "integration_request_body_template": {},
           "responses": [],
           "integration_responses": [],
-          "default_error_pattern": true,
-          "enable_proxy": true
+          "default_error_pattern": true
         }
       },
       "/signup": {
         "enable_cors": true,
         "POST": {
+          "enable_proxy": true,
           "authorization_type": "NONE",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
@@ -98,13 +100,13 @@
           "integration_request_body_template": {},
           "responses": [],
           "integration_responses": [],
-          "default_error_pattern": true,
-          "enable_proxy": true
+          "default_error_pattern": true
         }
       },
       "/tables": {
         "enable_cors": true,
         "GET": {
+          "enable_proxy": true,
           "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
@@ -113,10 +115,10 @@
           "integration_request_body_template": {},
           "responses": [],
           "integration_responses": [],
-          "default_error_pattern": true,
-          "enable_proxy": true
+          "default_error_pattern": true
         },
         "POST": {
+          "enable_proxy": true,
           "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
@@ -125,13 +127,13 @@
           "integration_request_body_template": {},
           "responses": [],
           "integration_responses": [],
-          "default_error_pattern": true,
-          "enable_proxy": true
+          "default_error_pattern": true
         }
       },
       "/tables/{tableId}": {
         "enable_cors": true,
         "GET": {
+          "enable_proxy": true,
           "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
@@ -140,13 +142,13 @@
           "integration_request_body_template": {},
           "responses": [],
           "integration_responses": [],
-          "default_error_pattern": true,
-          "enable_proxy": true
+          "default_error_pattern": true
         }
       },
       "/reservations": {
         "enable_cors": true,
         "GET": {
+          "enable_proxy": true,
           "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
@@ -155,10 +157,10 @@
           "integration_request_body_template": {},
           "responses": [],
           "integration_responses": [],
-          "default_error_pattern": true,
-          "enable_proxy": true
+          "default_error_pattern": true
         },
         "POST": {
+          "enable_proxy": true,
           "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
@@ -167,8 +169,7 @@
           "integration_request_body_template": {},
           "responses": [],
           "integration_responses": [],
-          "default_error_pattern": true,
-          "enable_proxy": true
+          "default_error_pattern": true
         }
       }
     },
@@ -203,5 +204,45 @@
     "global_indexes": [],
     "autoscaling": [],
     "tags": {}
+  },
+  "api-ui-hoster": {
+    "resource_type": "s3_bucket",
+    "acl": "private",
+    "cors": [],
+    "policy": {
+      "Version": "2012-10-17",
+      "Statement":
+        {
+          "Sid": "WebSiteHostingGetObject",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": [
+            "s3:GetObject"
+          ],
+          "Resource": [
+            "arn:aws:s3:::api-ui-hoster/*"
+          ],
+          "Condition": {
+            "IpAddress": {
+              "aws:SourceIp": [
+                "XXX.XXX.XXX.XXX/32"
+              ]
+            }
+          }
+        }
+
+    },
+    "public_access_block": {
+      "block_public_acls": true,
+      "ignore_public_acls": true,
+      "block_public_policy": true,
+      "restrict_public_buckets": true
+    },
+    "tags": {},
+    "website_hosting": {
+      "enabled": true,
+      "index_document": "index.html",
+      "error_document": "error.html"
+    }
   }
 }

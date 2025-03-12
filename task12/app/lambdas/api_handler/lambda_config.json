@@ -14,42 +14,24 @@
       "resource_type": "cognito_idp"
     }
   ],
-  "event_sources": [
-    {
-      "resource_type": "dynamodb_trigger",
-      "target_table": "Tables",
-      "batch_size": 1
-    },
-    {
-      "resource_type": "dynamodb_trigger",
-      "target_table": "Reservations",
-      "batch_size": 1
-    }
-  ],
-
+  "event_sources": [],
   "env_variables": {
-
-    "booking_userpool": {
+    "cup_id": {
       "resource_name": "${booking_userpool}",
       "resource_type": "cognito_idp",
       "parameter": "id"
     },
-
-    "COGNITO_CLIENT_ID": {
+    "cup_client_id": {
       "resource_name": "${booking_userpool}",
       "resource_type": "cognito_idp",
       "parameter": "client_id"
     },
-
-    "TABLES_TABLE": "${tables_table}",
-    "RESERVATIONS_TABLE": "${reservations_table}"
+    "tables_table": "${tables_table}",
+    "reservations_table": "${reservations_table}"
   },
-
   "publish_version": true,
   "alias": "${lambdas_alias_name}",
-  "url_config": {
-    "auth_type": "NONE"
-  },
+  "url_config": {},
   "ephemeral_storage": 512,
   "tags": {}
 }
