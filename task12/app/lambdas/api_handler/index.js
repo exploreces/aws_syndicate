@@ -78,15 +78,15 @@ function formatResponse(statusCode, body) {
 async function handleSignup(event) {
   try {
     const { firstName, lastName, email, password } = JSON.parse(event.body);
-    if (!firstName || !lastName || !email || !password) {
-      return formatResponse(400, { error: "All fields are required." });
-    }
-    if (!/^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      return formatResponse(400, { error: "Invalid email format." });
-    }
-    if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[$%^*-_])[A-Za-z\d$%^*-_]{12,}$/.test(password)) {
-      return formatResponse(400, { error: "Invalid password format." });
-    }
+//    if (!firstName || !lastName || !email || !password) {
+//      return formatResponse(400, { error: "All fields are required." });
+//    }
+//    if (!/^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+//      return formatResponse(400, { error: "Invalid email format." });
+//    }
+//    if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[$%^*-_])[A-Za-z\d$%^*-_]{12,}$/.test(password)) {
+//      return formatResponse(400, { error: "Invalid password format." });
+//    }
     await cognito.adminCreateUser({
       UserPoolId: USER_POOL_ID,
       Username: email,
