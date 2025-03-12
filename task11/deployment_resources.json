@@ -46,16 +46,7 @@
     "auto_verified_attributes": [],
     "sms_configuration": {},
     "username_attributes": [],
-    "custom_attributes": [
-      {
-        "name": "lastName",
-        "type": "String"
-      },
-      {
-        "name": "firstName",
-        "type": "String"
-      }
-    ],
+    "custom_attributes": [],
     "client": {
       "client_name": "client-app",
       "generate_secret": false,
