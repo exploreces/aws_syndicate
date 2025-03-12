@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "https://g9qmx786a8.execute-api.eu-west-1.amazonaws.com/{basePath}",
+      "url": "https://g9qmx786a8.execute-api.eu-west-1.amazonaws.com/api",
       "variables": {
         "basePath": {
           "default": "api"
