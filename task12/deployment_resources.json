@@ -63,7 +63,7 @@
     },
     "tags": {}
   },
-  "task12_api": {
+  "task12_api_": {
     "resource_type": "api_gateway_oas_v3",
     "deploy_stage": "api",
     "dependencies": [
