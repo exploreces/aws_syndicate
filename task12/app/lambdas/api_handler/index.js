@@ -1,9 +1,6 @@
 import AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
 
-//  Specification of the "apigateway" with ARN "arn:aws:apigateway:eu-west-1::/restapis/g9qmx786a8" saved successfully to the file "C:/EPAM_16/AWS/aws_syndicate/task12/export/g9qmx786a8_oas_v3.json"
-
-
 // Initialize AWS services
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const cognito = new AWS.CognitoIdentityServiceProvider();
@@ -58,11 +55,11 @@ export const handler = async (event, context) => {
 // Helper functions for CORS headers
 function corsHeaders() {
   return {
-          "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "*",
-          "Accept-Version": "*"
-         };
+    'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': '*',
+    'Accept-Version': '*'
+  };
 }
 
 // Helper function for formatting responses
@@ -78,15 +75,15 @@ function formatResponse(statusCode, body) {
 async function handleSignup(event) {
   try {
     const { firstName, lastName, email, password } = JSON.parse(event.body);
-//    if (!firstName || !lastName || !email || !password) {
-//      return formatResponse(400, { error: "All fields are required." });
-//    }
-//    if (!/^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-//      return formatResponse(400, { error: "Invalid email format." });
-//    }
-//    if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[$%^*-_])[A-Za-z\d$%^*-_]{12,}$/.test(password)) {
-//      return formatResponse(400, { error: "Invalid password format." });
-//    }
+    if (!firstName || !lastName || !email || !password) {
+      return formatResponse(400, { error: "All fields are required." });
+    }
+    if (!/^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      return formatResponse(400, { error: "Invalid email format." });
+    }
+    if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[$%^*-_])[A-Za-z\d$%^*-_]{12,}$/.test(password)) {
+      return formatResponse(400, { error: "Invalid password format." });
+    }
     await cognito.adminCreateUser({
       UserPoolId: USER_POOL_ID,
       Username: email,
@@ -119,34 +116,33 @@ async function handleSignup(event) {
 async function handleSignin(event) {
   try {
     const { email, password } = JSON.parse(event.body);
-    const getUserParams = {
-      UserPoolId: USER_POOL_ID,
-      Filter: `email = "${email}"`,
-      Limit: 1
-    };
-    const users = await cognito.listUsers(getUserParams).promise();
-    if (!users.Users.length) {
-      return formatResponse(400, { error: "User does not exist." });
-    }
-    const username = users.Users[0].Username;
+    console.log("Received signin request for:", email);
     const params = {
       AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
       UserPoolId: USER_POOL_ID,
       ClientId: CLIENT_ID,
       AuthParameters: {
-        USERNAME: username,
+        USERNAME: email,
         PASSWORD: password
       }
     };
     const authResponse = await cognito.adminInitiateAuth(params).promise();
+    console.log("Auth Response:", JSON.stringify(authResponse));
+    if (!authResponse.AuthenticationResult) {
+      console.error("AuthenticationResult is missing in response.");
+      return formatResponse(400, { error: "Authentication failed. Try again." });
+    }
     return formatResponse(200, {
-      accessToken: authResponse.AuthenticationResult?.IdToken
+      idToken: authResponse.AuthenticationResult.IdToken // ✅ Corrected key name
     });
   } catch (error) {
-    return formatResponse(400, { error: error.message });
+    console.error("Sign-in error:", error);
+    if (error.code === "NotAuthorizedException") {
+      return formatResponse(400, { error: "Invalid email or password." });
+    }
+    return formatResponse(400, { error: "Authentication failed." });
   }
 }
-
 // Table View
 async function handleGetTables(event) {
   const username = getUsernameFromToken(event);
