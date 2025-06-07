@@ -30,6 +30,7 @@
     "resource_type": "iam_policy",
     "tags": {}
   },
+
   "${target_table}": {
     "resource_type": "dynamodb_table",
     "hash_key_name": "id",
@@ -40,6 +41,7 @@
     "autoscaling": [],
     "tags": {}
   },
+
   "task5_api": {
     "resource_type": "api_gateway",
     "deploy_stage": "api",
